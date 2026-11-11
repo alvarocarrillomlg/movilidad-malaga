@@ -776,7 +776,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     </div>
 
     <div id="foot" class="extra">
-      La posición de cada autobús entre dos lecturas es una estimación.
+      La EMT publica la posición de sus autobuses cada 5 minutos; entre lecturas, el mapa la estima.
       Datos: <a href="https://datosabiertos.malaga.eu" target="_blank" rel="noopener">Ayuntamiento de Málaga</a> (CC BY 4.0) y
       <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>.
     </div>
@@ -915,7 +915,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   var buses = {}, busUpd = 0, busFetched = 0, live = false;
   var V_DEF = 3.4;      // m/s ≈ 12 km/h, velocidad comercial media: ya incluye paradas y semáforos
   var V_MAX = 11;       // m/s ≈ 40 km/h
-  var MAX_AHEAD = 150;  // s: no se proyecta más allá de este tiempo sin un dato real nuevo
+  var MAX_AHEAD = 330;  // s: la fuente publica cada 5 min; más allá no se proyecta sin un dato nuevo
 
   function loadBuses(d) {
     busFetched = d.t;
@@ -925,7 +925,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       seen[x.id] = 1;
       var line = lines[x.c], b = buses[x.id];
       if (!b) {
-        b = buses[x.id] = { id: x.id, v: V_DEF };
+        b = buses[x.id] = { id: x.id, v: V_DEF, medida: false };
         b.marker = L.marker([x.lat, x.lon], { icon: L.divIcon({ className: 'bus-ic', html: '', iconSize: [0, 0] }), keyboard: false });
         b.marker.bindPopup(function () { return busPopup(b); });
         b.marker.addTo(groups.buses);
@@ -937,10 +937,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
         var dt = (d.upd - b.upd) / 1000, adv = pr.s - b.s0;
         if (dt > 10) {
           var vObs = adv / dt;
-          if (vObs < .35) b.v = 0;                       // parado en cabecera, regulando o en un atasco
-          else if (vObs <= V_MAX * 1.3) b.v = Math.min(V_MAX, .6 * vObs + .4 * (b.v || V_DEF));
+          if (vObs < .35) { b.v = 0; b.medida = true; }  // parado en cabecera, regulando o en un atasco
+          else if (vObs <= V_MAX * 1.3) { b.v = Math.min(V_MAX, .6 * vObs + .4 * (b.v || V_DEF)); b.medida = true; }
         }
-      } else if (!b.upd || b.c !== x.c || b.s !== x.s) b.v = V_DEF;
+      } else if (!b.upd || b.c !== x.c || b.s !== x.s) { b.v = V_DEF; b.medida = false; }
       if (isNew || !b.upd) { b.upd = d.upd; b.lat = x.lat; b.lon = x.lon; b.s0 = pr ? pr.s : 0; }
       b.c = x.c; b.s = x.s; b.p = x.p; b.route = onRoute ? route : null; b.onRoute = onRoute;
       var u = line ? line.u : String(x.c), color = line ? line.color : css('--muted');
@@ -976,7 +976,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var age = Math.round((Date.now() - b.upd) / 1000);
     var note = !live ? 'Posición de la última lectura guardada.'
       : b.v === 0 ? 'Parado desde la lectura anterior. Último dato real ' + ago(age) + '.'
-      : b.est ? 'Posición estimada a ' + Math.round(b.v * 3.6) + ' km/h según su avance reciente. Último dato real ' + ago(age) + '.'
+      : b.est ? 'Posición estimada a ' + Math.round(b.v * 3.6) + ' km/h, ' + (b.medida ? 'su velocidad entre las dos últimas lecturas' : 'la media de la red') + '. Último dato real ' + ago(age) + '.'
       : 'Posición real, ' + ago(age) + '.';
     return '<div class="pop"><h3><span class="pill" style="--c:' + (l ? l.color : css('--muted')) + '">' + esc(l ? l.u : b.c) + '</span> ' + (dest ? 'hacia ' + esc(dest) : 'Autobús') + '</h3>' +
       '<div class="sub">' + (l ? esc(l.n) : '') + '</div>' +
@@ -995,8 +995,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       return;
     }
     var age = Math.round((Date.now() - busUpd) / 1000);
-    st.className = age < 240 ? 'live' : 'late';
-    tx.textContent = (age < 240 ? 'En directo' : 'La fuente va con retraso') + ' · autobuses leídos ' + ago(age);
+    st.className = age < 420 ? 'live' : 'late';
+    tx.textContent = (age < 420 ? 'En directo' : 'La fuente va con retraso') + ' · posición real de los autobuses ' + ago(age);
   }
 
   // ---------- Aparcamientos ----------

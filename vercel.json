@@ -1,0 +1,9 @@
+{
+  "buildCommand": "node build.js",
+  "outputDirectory": "public",
+  "framework": null,
+  "rewrites": [
+    { "source": "/data/:name.json", "destination": "/api/data?name=:name" },
+    { "source": "/tiles/:z/:x/:y.png", "destination": "https://tile.openstreetmap.org/:z/:x/:y.png" }
+  ]
+}
