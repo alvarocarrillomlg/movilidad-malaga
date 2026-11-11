@@ -1,0 +1,1122 @@
+<title>La movilidad de Málaga en directo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Mapa a pantalla completa; un panel flotante resume la ciudad y hace de leyenda y de control de capas. */
+:root {
+  --bg: #e9eeee;
+  --panel: #ffffff;
+  --panel-2: #f2f5f5;
+  --ink: #13222c;
+  --muted: #586973;
+  --line: #d6dee0;
+  --accent: #0b6f6a;
+  --good: #16794a;
+  --warn: #b26a00;
+  --bad: #c43a3a;
+  --cam: #44586c;
+  --stop: #13222c;
+  --stop-fill: #ffffff;
+  --on-color: #ffffff;
+  --shadow: 0 6px 24px rgba(19, 34, 44, .16);
+  --tile-filter: saturate(.45) contrast(.94) brightness(1.03);
+  --font: Matter, "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e171d; --panel: #16222b; --panel-2: #1d2c37; --ink: #e9eff2; --muted: #96a6b0;
+    --line: #2b3b47; --accent: #3cc4b9; --good: #4ccb8b; --warn: #f0ab3c; --bad: #ff7a70;
+    --cam: #9fb3c6; --stop: #e9eff2; --stop-fill: #16222b; --on-color: #0e171d;
+    --shadow: 0 6px 24px rgba(0, 0, 0, .5);
+    --tile-filter: invert(1) hue-rotate(180deg) saturate(.35) brightness(.82) contrast(.92);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e171d; --panel: #16222b; --panel-2: #1d2c37; --ink: #e9eff2; --muted: #96a6b0;
+  --line: #2b3b47; --accent: #3cc4b9; --good: #4ccb8b; --warn: #f0ab3c; --bad: #ff7a70;
+  --cam: #9fb3c6; --stop: #e9eff2; --stop-fill: #16222b; --on-color: #0e171d;
+  --shadow: 0 6px 24px rgba(0, 0, 0, .5);
+  --tile-filter: invert(1) hue-rotate(180deg) saturate(.35) brightness(.82) contrast(.92);
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 14px; line-height: 1.35; overflow: hidden; }
+* { box-sizing: border-box; }
+button, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+
+#app { position: relative; height: 100%; }
+#map { position: absolute; inset: 0; background: var(--bg); }
+
+/* ---------- Panel ---------- */
+#panel {
+  position: absolute; z-index: 1000;
+  top: calc(14px + env(safe-area-inset-top, 0px)); left: max(14px, env(safe-area-inset-left, 0px));
+  width: 348px; max-height: calc(100% - 28px);
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 18px 18px 14px; overflow-y: auto;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow);
+}
+h1 { margin: 0; font-size: 21px; line-height: 1.12; font-weight: 700; letter-spacing: -.015em; text-wrap: balance; }
+h1 em { font-style: normal; color: var(--accent); }
+#status { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12.5px; min-height: 18px; }
+#dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
+#status.live #dot { background: var(--good); animation: pulse 2s infinite; }
+#status.late #dot { background: var(--warn); }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--good) 55%, transparent); } 100% { box-shadow: 0 0 0 9px transparent; } }
+
+#layers { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.layer {
+  display: grid; grid-template-columns: auto 1fr; column-gap: 8px; row-gap: 2px; align-items: center; text-align: left;
+  padding: 10px 11px; background: var(--panel-2); border: 1px solid transparent; border-radius: 10px; cursor: pointer;
+}
+.layer:hover { border-color: var(--line); }
+.layer .big { grid-column: 1 / -1; font-size: 24px; font-weight: 700; letter-spacing: -.02em; line-height: 1.05; }
+.layer .lbl { font-size: 12.5px; color: var(--muted); }
+.layer .sw { width: 12px; height: 12px; flex: none; }
+.layer[aria-pressed="false"] { background: transparent; border-color: var(--line); }
+.layer[aria-pressed="false"] .big, .layer[aria-pressed="false"] .lbl { color: var(--muted); opacity: .7; text-decoration: line-through; text-decoration-thickness: 1px; }
+.layer[aria-pressed="false"] .sw { opacity: .35; }
+.sw-bus { border-radius: 4px; background: var(--accent); }
+.sw-park { border-radius: 3px; background: var(--good); }
+.sw-corte { background: var(--bad); transform: rotate(45deg) scale(.85); border-radius: 2px; }
+.sw-cam { border-radius: 50%; border: 3px solid var(--cam); }
+.sw-stop { border-radius: 50%; border: 2px solid var(--stop); background: var(--stop-fill); width: 10px; height: 10px; }
+.layer.wide { grid-column: 1 / -1; grid-template-columns: auto 1fr auto; }
+.layer.wide .lbl { color: var(--ink); }
+.layer.wide .hint { font-size: 12px; color: var(--muted); }
+
+.row { display: flex; align-items: center; gap: 8px; }
+.row label { font-size: 12.5px; color: var(--muted); flex: none; }
+#lineSel { flex: 1; min-width: 0; padding: 8px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 9px; }
+#lineClear { padding: 8px 10px; background: transparent; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; }
+#lineInfo { font-size: 12.5px; color: var(--muted); }
+
+#clima { display: grid; gap: 7px; padding-top: 12px; border-top: 1px solid var(--line); }
+#clima .c { display: grid; grid-template-columns: 52px 1fr; gap: 8px; align-items: baseline; font-size: 13px; }
+#clima .k { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+#clima b { font-weight: 600; }
+.tag { display: inline-block; padding: 1px 7px; border-radius: 99px; font-size: 11.5px; font-weight: 600; color: var(--on-color); background: var(--muted); }
+
+#foot { font-size: 11.5px; color: var(--muted); padding-top: 10px; border-top: 1px solid var(--line); }
+#foot a { color: inherit; }
+#more { display: none; }
+
+/* ---------- Marcadores ---------- */
+.bus-ic { transition: transform 2s linear, opacity .3s; }
+.zooming .bus-ic { transition: none; }
+.bus {
+  display: flex; align-items: center; justify-content: center; height: 20px; min-width: 24px; padding: 0 5px;
+  border-radius: 6px; border: 1.5px solid var(--panel); background: var(--c); color: #fff;
+  font: 700 11.5px/1 var(--font); letter-spacing: -.01em; box-shadow: 0 1px 4px rgba(0, 0, 0, .35); white-space: nowrap;
+}
+.bus-ic.dim { opacity: .16; }
+.bus-ic.still .bus { border-style: dashed; }
+.park {
+  display: flex; align-items: center; gap: 4px; height: 24px; padding: 0 7px 0 3px; border-radius: 7px;
+  background: var(--c); color: var(--on-color); border: 1.5px solid var(--panel); box-shadow: 0 1px 5px rgba(0, 0, 0, .35);
+  font: 700 12px/1 var(--font); white-space: nowrap; width: max-content; transform: translate(-50%, -50%);
+}
+.park i { font-style: normal; display: grid; place-items: center; width: 17px; height: 17px; border-radius: 4px; background: var(--on-color); color: var(--c); font-size: 11.5px; }
+.corte { width: 13px; height: 13px; background: var(--c); border: 1.5px solid var(--panel); transform: rotate(45deg); border-radius: 2px; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); }
+.corte.futuro { background: var(--panel); border-color: var(--c); }
+
+/* ---------- Leaflet (hoja de estilos incluida, adaptada a los colores de la página) ---------- */
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container,
+.leaflet-pane > svg,
+.leaflet-pane > canvas,
+.leaflet-zoom-box,
+.leaflet-image-layer,
+.leaflet-layer {
+	position: absolute;
+	left: 0;
+	top: 0;
+	}
+.leaflet-container {
+	overflow: hidden;
+	}
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	-webkit-user-select: none;
+	   -moz-user-select: none;
+	        user-select: none;
+	  -webkit-user-drag: none;
+	}
+.leaflet-tile::selection {
+	background: transparent;
+}
+.leaflet-safari .leaflet-tile {
+	image-rendering: -webkit-optimize-contrast;
+	}
+.leaflet-safari .leaflet-tile-container {
+	width: 1600px;
+	height: 1600px;
+	-webkit-transform-origin: 0 0;
+	}
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	display: block;
+	}
+.leaflet-container .leaflet-overlay-pane svg {
+	max-width: none !important;
+	max-height: none !important;
+	}
+.leaflet-container .leaflet-marker-pane img,
+.leaflet-container .leaflet-shadow-pane img,
+.leaflet-container .leaflet-tile-pane img,
+.leaflet-container img.leaflet-image-layer,
+.leaflet-container .leaflet-tile {
+	max-width: none !important;
+	max-height: none !important;
+	width: auto;
+	padding: 0;
+	}
+.leaflet-container img.leaflet-tile {
+	mix-blend-mode: plus-lighter;
+}
+.leaflet-container.leaflet-touch-zoom {
+	-ms-touch-action: pan-x pan-y;
+	touch-action: pan-x pan-y;
+	}
+.leaflet-container.leaflet-touch-drag {
+	-ms-touch-action: pinch-zoom;
+	touch-action: none;
+	touch-action: pinch-zoom;
+}
+.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom {
+	-ms-touch-action: none;
+	touch-action: none;
+}
+.leaflet-container {
+	-webkit-tap-highlight-color: transparent;
+}
+.leaflet-container a {
+	-webkit-tap-highlight-color: rgba(51, 181, 229, 0.4);
+}
+.leaflet-tile {
+	filter: inherit;
+	visibility: hidden;
+	}
+.leaflet-tile-loaded {
+	visibility: inherit;
+	}
+.leaflet-zoom-box {
+	width: 0;
+	height: 0;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	z-index: 800;
+	}
+.leaflet-overlay-pane svg {
+	-moz-user-select: none;
+	}
+.leaflet-pane         { z-index: 400; }
+.leaflet-tile-pane    { z-index: 200; }
+.leaflet-overlay-pane { z-index: 400; }
+.leaflet-shadow-pane  { z-index: 500; }
+.leaflet-marker-pane  { z-index: 600; }
+.leaflet-tooltip-pane   { z-index: 650; }
+.leaflet-popup-pane   { z-index: 700; }
+.leaflet-map-pane canvas { z-index: 100; }
+.leaflet-map-pane svg    { z-index: 200; }
+.leaflet-vml-shape {
+	width: 1px;
+	height: 1px;
+	}
+.leaflet-control {
+	position: relative;
+	z-index: 800;
+	pointer-events: visiblePainted; 
+	pointer-events: auto;
+	}
+.leaflet-top,
+.leaflet-bottom {
+	position: absolute;
+	z-index: 1000;
+	pointer-events: none;
+	}
+.leaflet-top {
+	top: 0;
+	}
+.leaflet-right {
+	right: 0;
+	}
+.leaflet-bottom {
+	bottom: 0;
+	}
+.leaflet-left {
+	left: 0;
+	}
+.leaflet-control {
+	float: left;
+	clear: both;
+	}
+.leaflet-right .leaflet-control {
+	float: right;
+	}
+.leaflet-top .leaflet-control {
+	margin-top: 10px;
+	}
+.leaflet-bottom .leaflet-control {
+	margin-bottom: 10px;
+	}
+.leaflet-left .leaflet-control {
+	margin-left: 10px;
+	}
+.leaflet-right .leaflet-control {
+	margin-right: 10px;
+	}
+.leaflet-fade-anim .leaflet-popup {
+	opacity: 0;
+	-webkit-transition: opacity 0.2s linear;
+	   -moz-transition: opacity 0.2s linear;
+	        transition: opacity 0.2s linear;
+	}
+.leaflet-fade-anim .leaflet-map-pane .leaflet-popup {
+	opacity: 1;
+	}
+.leaflet-zoom-animated {
+	-webkit-transform-origin: 0 0;
+	    -ms-transform-origin: 0 0;
+	        transform-origin: 0 0;
+	}
+svg.leaflet-zoom-animated {
+	will-change: transform;
+}
+.leaflet-zoom-anim .leaflet-zoom-animated {
+	-webkit-transition: -webkit-transform 0.25s cubic-bezier(0,0,0.25,1);
+	   -moz-transition:    -moz-transform 0.25s cubic-bezier(0,0,0.25,1);
+	        transition:         transform 0.25s cubic-bezier(0,0,0.25,1);
+	}
+.leaflet-zoom-anim .leaflet-tile,
+.leaflet-pan-anim .leaflet-tile {
+	-webkit-transition: none;
+	   -moz-transition: none;
+	        transition: none;
+	}
+.leaflet-zoom-anim .leaflet-zoom-hide {
+	visibility: hidden;
+	}
+.leaflet-interactive {
+	cursor: pointer;
+	}
+.leaflet-grab {
+	cursor: -webkit-grab;
+	cursor:    -moz-grab;
+	cursor:         grab;
+	}
+.leaflet-crosshair,
+.leaflet-crosshair .leaflet-interactive {
+	cursor: crosshair;
+	}
+.leaflet-popup-pane,
+.leaflet-control {
+	cursor: auto;
+	}
+.leaflet-dragging .leaflet-grab,
+.leaflet-dragging .leaflet-grab .leaflet-interactive,
+.leaflet-dragging .leaflet-marker-draggable {
+	cursor: move;
+	cursor: -webkit-grabbing;
+	cursor:    -moz-grabbing;
+	cursor:         grabbing;
+	}
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-image-layer,
+.leaflet-pane > svg path,
+.leaflet-tile-container {
+	pointer-events: none;
+	}
+.leaflet-marker-icon.leaflet-interactive,
+.leaflet-image-layer.leaflet-interactive,
+.leaflet-pane > svg path.leaflet-interactive,
+svg.leaflet-image-layer.leaflet-interactive path {
+	pointer-events: visiblePainted; 
+	pointer-events: auto;
+	}
+.leaflet-container {
+	background: #ddd;
+	outline-offset: 1px;
+	}
+.leaflet-container a {
+	color: #0078A8;
+	}
+.leaflet-zoom-box {
+	border: 2px dotted #38f;
+	background: rgba(255,255,255,0.5);
+	}
+.leaflet-container {
+	font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	font-size: 0.75rem;
+	line-height: 1.5;
+	}
+.leaflet-bar {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+	border-radius: 4px;
+	}
+.leaflet-bar a {
+	background-color: #fff;
+	border-bottom: 1px solid #ccc;
+	width: 26px;
+	height: 26px;
+	line-height: 26px;
+	display: block;
+	text-align: center;
+	text-decoration: none;
+	color: black;
+	}
+.leaflet-bar a,
+.leaflet-control-layers-toggle {
+	background-position: 50% 50%;
+	background-repeat: no-repeat;
+	display: block;
+	}
+.leaflet-bar a:hover,
+.leaflet-bar a:focus {
+	background-color: #f4f4f4;
+	}
+.leaflet-bar a:first-child {
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
+	}
+.leaflet-bar a:last-child {
+	border-bottom-left-radius: 4px;
+	border-bottom-right-radius: 4px;
+	border-bottom: none;
+	}
+.leaflet-bar a.leaflet-disabled {
+	cursor: default;
+	background-color: #f4f4f4;
+	color: #bbb;
+	}
+.leaflet-touch .leaflet-bar a {
+	width: 30px;
+	height: 30px;
+	line-height: 30px;
+	}
+.leaflet-touch .leaflet-bar a:first-child {
+	border-top-left-radius: 2px;
+	border-top-right-radius: 2px;
+	}
+.leaflet-touch .leaflet-bar a:last-child {
+	border-bottom-left-radius: 2px;
+	border-bottom-right-radius: 2px;
+	}
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+	font: bold 18px 'Lucida Console', Monaco, monospace;
+	text-indent: 1px;
+	}
+.leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out  {
+	font-size: 22px;
+	}
+.leaflet-control-layers {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+	background: #fff;
+	border-radius: 5px;
+	}
+.leaflet-touch .leaflet-control-layers-toggle {
+	width: 44px;
+	height: 44px;
+	}
+.leaflet-control-layers .leaflet-control-layers-list,
+.leaflet-control-layers-expanded .leaflet-control-layers-toggle {
+	display: none;
+	}
+.leaflet-control-layers-expanded .leaflet-control-layers-list {
+	display: block;
+	position: relative;
+	}
+.leaflet-control-layers-expanded {
+	padding: 6px 10px 6px 6px;
+	color: #333;
+	background: #fff;
+	}
+.leaflet-control-layers-scrollbar {
+	overflow-y: scroll;
+	overflow-x: hidden;
+	padding-right: 5px;
+	}
+.leaflet-control-layers-selector {
+	margin-top: 2px;
+	position: relative;
+	top: 1px;
+	}
+.leaflet-control-layers label {
+	display: block;
+	font-size: 13px;
+	font-size: 1.08333em;
+	}
+.leaflet-control-layers-separator {
+	height: 0;
+	border-top: 1px solid #ddd;
+	margin: 5px -10px 5px -6px;
+	}
+.leaflet-container .leaflet-control-attribution {
+	background: #fff;
+	background: rgba(255, 255, 255, 0.8);
+	margin: 0;
+	}
+.leaflet-control-attribution,
+.leaflet-control-scale-line {
+	padding: 0 5px;
+	color: #333;
+	line-height: 1.4;
+	}
+.leaflet-control-attribution a {
+	text-decoration: none;
+	}
+.leaflet-control-attribution a:hover,
+.leaflet-control-attribution a:focus {
+	text-decoration: underline;
+	}
+.leaflet-attribution-flag {
+	display: inline !important;
+	vertical-align: baseline !important;
+	width: 1em;
+	height: 0.6669em;
+	}
+.leaflet-left .leaflet-control-scale {
+	margin-left: 5px;
+	}
+.leaflet-bottom .leaflet-control-scale {
+	margin-bottom: 5px;
+	}
+.leaflet-control-scale-line {
+	border: 2px solid #777;
+	border-top: none;
+	line-height: 1.1;
+	padding: 2px 5px 1px;
+	white-space: nowrap;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	background: rgba(255, 255, 255, 0.8);
+	text-shadow: 1px 1px #fff;
+	}
+.leaflet-control-scale-line:not(:first-child) {
+	border-top: 2px solid #777;
+	border-bottom: none;
+	margin-top: -2px;
+	}
+.leaflet-control-scale-line:not(:first-child):not(:last-child) {
+	border-bottom: 2px solid #777;
+	}
+.leaflet-touch .leaflet-control-attribution,
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	box-shadow: none;
+	}
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	border: 2px solid rgba(0,0,0,0.2);
+	background-clip: padding-box;
+	}
+.leaflet-popup {
+	position: absolute;
+	text-align: center;
+	margin-bottom: 20px;
+	}
+.leaflet-popup-content-wrapper {
+	padding: 1px;
+	text-align: left;
+	border-radius: 12px;
+	}
+.leaflet-popup-content {
+	margin: 13px 24px 13px 20px;
+	line-height: 1.3;
+	font-size: 13px;
+	font-size: 1.08333em;
+	min-height: 1px;
+	}
+.leaflet-popup-content p {
+	margin: 17px 0;
+	margin: 1.3em 0;
+	}
+.leaflet-popup-tip-container {
+	width: 40px;
+	height: 20px;
+	position: absolute;
+	left: 50%;
+	margin-top: -1px;
+	margin-left: -20px;
+	overflow: hidden;
+	pointer-events: none;
+	}
+.leaflet-popup-tip {
+	width: 17px;
+	height: 17px;
+	padding: 1px;
+	margin: -10px auto 0;
+	pointer-events: auto;
+	-webkit-transform: rotate(45deg);
+	   -moz-transform: rotate(45deg);
+	    -ms-transform: rotate(45deg);
+	        transform: rotate(45deg);
+	}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+	background: white;
+	color: #333;
+	box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+	}
+.leaflet-container a.leaflet-popup-close-button {
+	position: absolute;
+	top: 0;
+	right: 0;
+	border: none;
+	text-align: center;
+	width: 24px;
+	height: 24px;
+	font: 16px/24px Tahoma, Verdana, sans-serif;
+	color: #757575;
+	text-decoration: none;
+	background: transparent;
+	}
+.leaflet-container a.leaflet-popup-close-button:hover,
+.leaflet-container a.leaflet-popup-close-button:focus {
+	color: #585858;
+	}
+.leaflet-popup-scrolled {
+	overflow: auto;
+	}
+.leaflet-oldie .leaflet-popup-content-wrapper {
+	-ms-zoom: 1;
+	}
+.leaflet-oldie .leaflet-popup-tip {
+	width: 24px;
+	margin: 0 auto;
+	-ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)";
+	filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678);
+	}
+.leaflet-oldie .leaflet-control-zoom,
+.leaflet-oldie .leaflet-control-layers,
+.leaflet-oldie .leaflet-popup-content-wrapper,
+.leaflet-oldie .leaflet-popup-tip {
+	border: 1px solid #999;
+	}
+.leaflet-div-icon {
+	background: #fff;
+	border: 1px solid #666;
+	}
+.leaflet-tooltip {
+	position: absolute;
+	padding: 6px;
+	background-color: #fff;
+	border: 1px solid #fff;
+	border-radius: 3px;
+	color: #222;
+	white-space: nowrap;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	pointer-events: none;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+	}
+.leaflet-tooltip.leaflet-interactive {
+	cursor: pointer;
+	pointer-events: auto;
+	}
+.leaflet-tooltip-top:before,
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	position: absolute;
+	pointer-events: none;
+	border: 6px solid transparent;
+	background: transparent;
+	content: "";
+	}
+.leaflet-tooltip-bottom {
+	margin-top: 6px;
+}
+.leaflet-tooltip-top {
+	margin-top: -6px;
+}
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-top:before {
+	left: 50%;
+	margin-left: -6px;
+	}
+.leaflet-tooltip-top:before {
+	bottom: 0;
+	margin-bottom: -12px;
+	border-top-color: #fff;
+	}
+.leaflet-tooltip-bottom:before {
+	top: 0;
+	margin-top: -12px;
+	margin-left: -6px;
+	border-bottom-color: #fff;
+	}
+.leaflet-tooltip-left {
+	margin-left: -6px;
+}
+.leaflet-tooltip-right {
+	margin-left: 6px;
+}
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	top: 50%;
+	margin-top: -6px;
+	}
+.leaflet-tooltip-left:before {
+	right: 0;
+	margin-right: -12px;
+	border-left-color: #fff;
+	}
+.leaflet-tooltip-right:before {
+	left: 0;
+	margin-left: -12px;
+	border-right-color: #fff;
+	}
+@media print {
+	.leaflet-control {
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
+		}
+	}
+.leaflet-container { font-family: var(--font); background: var(--bg); }
+.leaflet-tile-pane { filter: var(--tile-filter); }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--panel); color: var(--ink); box-shadow: var(--shadow); }
+.leaflet-popup-content-wrapper { border-radius: 12px; border: 1px solid var(--line); }
+.leaflet-popup-content { margin: 13px 15px; font-size: 13px; line-height: 1.4; min-width: 190px; }
+.leaflet-container a.leaflet-popup-close-button { color: var(--muted); }
+.leaflet-bar { border: 1px solid var(--line) !important; box-shadow: var(--shadow); border-radius: 10px; overflow: hidden; }
+.leaflet-bar a, .leaflet-bar a:hover { background: var(--panel); color: var(--ink); border-bottom-color: var(--line); }
+.leaflet-bar a.leaflet-disabled { background: var(--panel-2); color: var(--muted); }
+.leaflet-control-attribution { background: color-mix(in srgb, var(--panel) 80%, transparent) !important; color: var(--muted); font-size: 10.5px; }
+.leaflet-control-attribution a { color: inherit; }
+.leaflet-right .leaflet-control { margin-right: max(14px, env(safe-area-inset-right, 0px)); }
+
+.pop h3 { margin: 0 0 2px; font-size: 15px; font-weight: 700; line-height: 1.2; }
+.pop .sub { color: var(--muted); font-size: 12.5px; }
+.pop p { margin: 8px 0 0; }
+.pop .fig { font-size: 26px; font-weight: 700; letter-spacing: -.02em; line-height: 1; }
+.pop .note { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+.pop a { color: var(--accent); font-weight: 600; }
+.pop img { display: block; width: 260px; max-width: 100%; margin-top: 9px; border-radius: 8px; background: var(--panel-2); aspect-ratio: 4 / 3; object-fit: cover; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.chip { border: 0; border-radius: 5px; padding: 3px 6px; background: var(--c); color: #fff; font: 700 11.5px/1.1 var(--font); cursor: pointer; }
+.pill { display: inline-block; border-radius: 6px; padding: 2px 7px; background: var(--c); color: #fff; font-weight: 700; }
+
+/* ---------- Móvil: el panel pasa abajo y se despliega ---------- */
+@media (max-width: 720px) {
+  #panel {
+    top: auto; left: max(10px, env(safe-area-inset-left, 0px)); right: max(10px, env(safe-area-inset-right, 0px));
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px)); width: auto; max-height: 72%; padding: 13px 14px 12px; gap: 10px;
+  }
+  h1 { font-size: 17px; padding-right: 74px; }
+  #layers { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .layer { padding: 7px 8px; grid-template-columns: 1fr; }
+  .layer .sw { display: none; }
+  .layer .big { font-size: 17px; }
+  .layer .lbl { font-size: 11px; line-height: 1.15; min-width: 0; }
+  .layer { align-content: start; }
+  #more {
+    display: block; position: absolute; top: 10px; right: 12px; padding: 5px 10px;
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-size: 12.5px;
+  }
+  #panel:not(.open) .extra { display: none; }
+  .leaflet-bottom.leaflet-right { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bus-ic { transition: none; }
+  #status.live #dot { animation: none; }
+}
+</style>
+
+<div id="app">
+  <div id="map" aria-label="Mapa de Málaga"></div>
+
+  <section id="panel" aria-label="Resumen y capas">
+    <button id="more" type="button" aria-expanded="false">Más</button>
+    <h1>La movilidad de Málaga <em>en directo</em></h1>
+    <div id="status" role="status"><span id="dot"></span><span id="statusText">Cargando datos…</span></div>
+
+    <div id="layers">
+      <button class="layer" type="button" data-layer="buses" aria-pressed="true">
+        <span class="big num" id="nBuses">–</span><span class="sw sw-bus"></span><span class="lbl">Autobuses</span>
+      </button>
+      <button class="layer" type="button" data-layer="park" aria-pressed="true">
+        <span class="big num" id="nPark">–</span><span class="sw sw-park"></span><span class="lbl">Plazas libres</span>
+      </button>
+      <button class="layer" type="button" data-layer="cortes" aria-pressed="true">
+        <span class="big num" id="nCortes">–</span><span class="sw sw-corte"></span><span class="lbl">Cortes y obras</span>
+      </button>
+      <button class="layer" type="button" data-layer="cams" aria-pressed="true">
+        <span class="big num" id="nCams">–</span><span class="sw sw-cam"></span><span class="lbl">Cámaras</span>
+      </button>
+      <button class="layer wide extra" type="button" data-layer="stops" aria-pressed="true">
+        <span class="sw sw-stop"></span><span class="lbl"><span class="num" id="nStops">–</span> paradas de autobús</span><span class="hint" id="stopHint"></span>
+      </button>
+    </div>
+
+    <div class="extra">
+      <div class="row">
+        <label for="lineSel">Línea</label>
+        <select id="lineSel"><option value="">Todas las líneas</option></select>
+        <button id="lineClear" type="button" hidden>Ver todas</button>
+      </div>
+      <div id="lineInfo" hidden></div>
+    </div>
+
+    <div id="clima" class="extra">
+      <div class="c"><span class="k">Tiempo</span><span id="cTiempo">–</span></div>
+      <div class="c"><span class="k">Aire</span><span id="cAire">–</span></div>
+      <div class="c"><span class="k">Mar</span><span id="cMar">–</span></div>
+    </div>
+
+    <div id="foot" class="extra">
+      La posición de cada autobús entre dos lecturas es una estimación.
+      Datos: <a href="https://datosabiertos.malaga.eu" target="_blank" rel="noopener">Ayuntamiento de Málaga</a> (CC BY 4.0) y
+      <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>.
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var fmt = new Intl.NumberFormat('es-ES', { useGrouping: 'always' });
+  var dec1 = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 });
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var css = function (name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); };
+
+  if (!window.L) { $('statusText').textContent = 'No se ha podido cargar el mapa. Recarga la página.'; return; }
+
+  // ---------- Mapa ----------
+  var CENTER = [36.7196, -4.4200];
+  var SNAP_ZOOM = 15; // máximo nivel guardado junto a la página; el servidor ofrece hasta 19
+  var map = L.map('map', { center: CENTER, zoom: 14, minZoom: 11, maxZoom: 18, preferCanvas: true, zoomControl: false,
+    maxBounds: [[36.55, -4.80], [36.90, -4.10]], maxBoundsViscosity: .8 });
+  L.control.zoom({ position: 'bottomright', zoomInTitle: 'Acercar', zoomOutTitle: 'Alejar' }).addTo(map);
+  map.attributionControl.setPrefix(false);
+  var tiles = L.tileLayer('tiles/{z}/{x}/{y}.png', { maxNativeZoom: SNAP_ZOOM, maxZoom: 18, minZoom: 11,
+    attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' }).addTo(map);
+  // Si responde un nivel que no está guardado, hay servidor detrás y se puede pedir todo el detalle.
+  var probe = new Image();
+  probe.onload = function () { tiles.options.maxNativeZoom = 19; tiles.redraw(); };
+  probe.src = 'tiles/17/63926/51144.png';
+  map.on('zoomstart', function () { map.getContainer().classList.add('zooming'); });
+  map.on('zoomend', function () { setTimeout(function () { map.getContainer().classList.remove('zooming'); }, 60); syncStops(); });
+
+  var groups = { buses: L.layerGroup().addTo(map), park: L.layerGroup().addTo(map), cortes: L.layerGroup().addTo(map),
+    cams: L.layerGroup().addTo(map), stops: L.layerGroup(), route: L.layerGroup().addTo(map) };
+  var shown = { buses: true, park: true, cortes: true, cams: true, stops: true };
+  try { var saved = JSON.parse(localStorage.getItem('capas') || '{}'); for (var k in shown) if (typeof saved[k] === 'boolean') shown[k] = saved[k]; } catch (e) {}
+
+  // ---------- Geometría ----------
+  var R = 6371000, RAD = Math.PI / 180;
+  function dist(a, b) { // metros; suficiente a escala de ciudad
+    var x = (b[1] - a[1]) * RAD * Math.cos((a[0] + b[0]) / 2 * RAD), y = (b[0] - a[0]) * RAD;
+    return Math.sqrt(x * x + y * y) * R;
+  }
+  function makeRoute(pts) {
+    var cum = [0];
+    for (var i = 1; i < pts.length; i++) cum.push(cum[i - 1] + dist(pts[i - 1], pts[i]));
+    return { pts: pts, cum: cum, len: cum[cum.length - 1] || 0 };
+  }
+  // Proyecta un punto sobre la ruta: distancia recorrida desde la cabecera y separación de la ruta.
+  function project(route, p) {
+    var best = { s: 0, off: Infinity }, k = Math.cos(p[0] * RAD);
+    for (var i = 1; i < route.pts.length; i++) {
+      var a = route.pts[i - 1], b = route.pts[i];
+      var ax = (a[1] - p[1]) * k, ay = a[0] - p[0], bx = (b[1] - p[1]) * k, by = b[0] - p[0];
+      var dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+      var t = l2 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / l2)) : 0;
+      var cx = ax + t * dx, cy = ay + t * dy, off = Math.sqrt(cx * cx + cy * cy) * RAD * R;
+      if (off < best.off) best = { s: route.cum[i - 1] + t * (route.cum[i] - route.cum[i - 1]), off: off };
+    }
+    return best;
+  }
+  function pointAt(route, s) {
+    s = Math.max(0, Math.min(route.len, s));
+    var i = 1;
+    while (i < route.cum.length - 1 && route.cum[i] < s) i++;
+    var seg = route.cum[i] - route.cum[i - 1], t = seg ? (s - route.cum[i - 1]) / seg : 0, a = route.pts[i - 1], b = route.pts[i];
+    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  }
+
+  // ---------- Líneas y paradas ----------
+  var lines = {}, stops = {}, stopMarkers = [], selected = null;
+  function lineColor(i) { return 'hsl(' + Math.round((i * 137.508 + 200) % 360) + ' ' + (i % 2 ? 62 : 74) + '% ' + (i % 3 ? 38 : 31) + '%)'; }
+
+  function loadLines(d) {
+    d.stops.forEach(function (s) { s.lines = []; stops[s.id] = s; });
+    d.lines.forEach(function (l, i) {
+      l.color = lineColor(i); l.routes = {};
+      ['1', '2'].forEach(function (dir) {
+        var ids = l.r[dir] || [];
+        ids.forEach(function (id) { if (stops[id] && stops[id].lines.indexOf(l) < 0) stops[id].lines.push(l); });
+        var pts = ids.filter(function (id) { return stops[id]; }).map(function (id) { return [stops[id].lat, stops[id].lon]; });
+        if (pts.length > 1) l.routes[dir] = makeRoute(pts);
+      });
+      lines[l.c] = l;
+      var o = document.createElement('option'); o.value = l.c; o.textContent = l.u + ' · ' + l.n; $('lineSel').appendChild(o);
+    });
+    $('nStops').textContent = fmt.format(d.stops.length);
+    d.stops.forEach(function (s) {
+      var m = L.circleMarker([s.lat, s.lon], { radius: 4, weight: 1.5 });
+      m.stop = s;
+      m.bindPopup(function () {
+        return '<div class="pop"><h3>' + esc(s.n) + '</h3><div class="sub">Parada ' + s.id + (s.d ? ' · ' + esc(s.d) : '') + '</div>' +
+          '<div class="chips">' + s.lines.map(function (l) { return '<button class="chip" type="button" style="--c:' + l.color + '" data-line="' + l.c + '" title="' + esc(l.n) + '">' + esc(l.u) + '</button>'; }).join('') + '</div></div>';
+      });
+      stopMarkers.push(m);
+    });
+    styleCanvas(); syncStops();
+  }
+
+  function syncStops() {
+    var zoomOk = map.getZoom() >= 15 || !!selected;
+    $('stopHint').textContent = shown.stops && !zoomOk ? 'Acerca el mapa para verlas' : '';
+    groups.stops.clearLayers();
+    if (shown.stops && zoomOk) {
+      stopMarkers.forEach(function (m) { if (!selected || m.stop.lines.indexOf(selected) >= 0) groups.stops.addLayer(m); });
+      if (!map.hasLayer(groups.stops)) groups.stops.addTo(map);
+    } else if (map.hasLayer(groups.stops)) map.removeLayer(groups.stops);
+  }
+
+  function selectLine(c, fit) {
+    selected = c === '' || c == null ? null : lines[c] || null;
+    $('lineSel').value = selected ? selected.c : '';
+    $('lineClear').hidden = !selected;
+    groups.route.clearLayers();
+    var info = $('lineInfo');
+    if (selected) {
+      var all = [];
+      ['1', '2'].forEach(function (dir) {
+        var r = selected.routes[dir]; if (!r) return;
+        L.polyline(r.pts, { color: selected.color, weight: 4, opacity: .8, interactive: false, dashArray: dir === '2' ? '1 7' : null }).addTo(groups.route);
+        all = all.concat(r.pts);
+      });
+      if (fit && all.length) map.fitBounds(L.latLngBounds(all), { paddingTopLeft: [innerWidth > 720 ? 380 : 20, 20], paddingBottomRight: [20, innerWidth > 720 ? 20 : 220] });
+      var n = Object.keys(buses).filter(function (id) { return buses[id].c === selected.c; }).length;
+      info.hidden = false;
+      info.textContent = selected.ida + ' ↔ ' + selected.vuelta + ' · ' + n + (n === 1 ? ' autobús' : ' autobuses') + ' ahora. El trazado une las paradas en línea recta.';
+    } else info.hidden = true;
+    for (var id in buses) dimBus(buses[id]);
+    syncStops();
+  }
+  function dimBus(b) { var el = b.marker.getElement(); if (el) el.classList.toggle('dim', !!selected && b.c !== selected.c); }
+
+  // ---------- Autobuses ----------
+  var buses = {}, busUpd = 0, busFetched = 0, live = false;
+  var V_DEF = 3.4;      // m/s ≈ 12 km/h, velocidad comercial media: ya incluye paradas y semáforos
+  var V_MAX = 11;       // m/s ≈ 40 km/h
+  var MAX_AHEAD = 150;  // s: no se proyecta más allá de este tiempo sin un dato real nuevo
+
+  function loadBuses(d) {
+    busFetched = d.t;
+    live = Date.now() - d.t < 5 * 60000;
+    var isNew = d.upd !== busUpd, seen = {};
+    d.buses.forEach(function (x) {
+      seen[x.id] = 1;
+      var line = lines[x.c], b = buses[x.id];
+      if (!b) {
+        b = buses[x.id] = { id: x.id, v: V_DEF };
+        b.marker = L.marker([x.lat, x.lon], { icon: L.divIcon({ className: 'bus-ic', html: '', iconSize: [0, 0] }), keyboard: false });
+        b.marker.bindPopup(function () { return busPopup(b); });
+        b.marker.addTo(groups.buses);
+      }
+      var route = line && line.routes[String(x.s)], pr = route ? project(route, [x.lat, x.lon]) : null;
+      var onRoute = !!pr && pr.off < 200;
+      if (isNew && b.upd && onRoute && b.onRoute && b.c === x.c && b.s === x.s) {
+        // Velocidad observada entre las dos últimas lecturas reales, suavizada con la anterior.
+        var dt = (d.upd - b.upd) / 1000, adv = pr.s - b.s0;
+        if (dt > 10) {
+          var vObs = adv / dt;
+          if (vObs < .35) b.v = 0;                       // parado en cabecera, regulando o en un atasco
+          else if (vObs <= V_MAX * 1.3) b.v = Math.min(V_MAX, .6 * vObs + .4 * (b.v || V_DEF));
+        }
+      } else if (!b.upd || b.c !== x.c || b.s !== x.s) b.v = V_DEF;
+      if (isNew || !b.upd) { b.upd = d.upd; b.lat = x.lat; b.lon = x.lon; b.s0 = pr ? pr.s : 0; }
+      b.c = x.c; b.s = x.s; b.p = x.p; b.route = onRoute ? route : null; b.onRoute = onRoute;
+      var u = line ? line.u : String(x.c), color = line ? line.color : css('--muted');
+      if (b.label !== u) {
+        b.label = u;
+        var w = 12 + u.length * 8;
+        b.marker.setIcon(L.divIcon({ className: 'bus-ic', html: '<div class="bus" style="--c:' + color + '">' + esc(u) + '</div>', iconSize: [w, 20], iconAnchor: [w / 2, 10] }));
+      }
+      dimBus(b);
+    });
+    for (var id in buses) if (!seen[id]) { groups.buses.removeLayer(buses[id].marker); delete buses[id]; }
+    busUpd = d.upd;
+    $('nBuses').textContent = fmt.format(d.buses.length);
+    tick();
+  }
+
+  function busPos(b, now) {
+    if (!live || !b.route || !b.v) return { ll: [b.lat, b.lon], est: false };
+    var age = Math.max(0, Math.min(MAX_AHEAD, (now - b.upd) / 1000));
+    return { ll: pointAt(b.route, b.s0 + b.v * age), est: age > 5 };
+  }
+  function tick() {
+    var now = Date.now();
+    for (var id in buses) {
+      var b = buses[id], p = busPos(b, now);
+      b.marker.setLatLng(p.ll); b.est = p.est;
+      var el = b.marker.getElement(); if (el) el.classList.toggle('still', live && b.v === 0);
+    }
+    renderStatus();
+  }
+  function busPopup(b) {
+    var l = lines[b.c], dest = l ? (b.s === 1 ? l.vuelta : l.ida) : '', st = stops[b.p];
+    var age = Math.round((Date.now() - b.upd) / 1000);
+    var note = !live ? 'Posición de la última lectura guardada.'
+      : b.v === 0 ? 'Parado desde la lectura anterior. Último dato real ' + ago(age) + '.'
+      : b.est ? 'Posición estimada a ' + Math.round(b.v * 3.6) + ' km/h según su avance reciente. Último dato real ' + ago(age) + '.'
+      : 'Posición real, ' + ago(age) + '.';
+    return '<div class="pop"><h3><span class="pill" style="--c:' + (l ? l.color : css('--muted')) + '">' + esc(l ? l.u : b.c) + '</span> ' + (dest ? 'hacia ' + esc(dest) : 'Autobús') + '</h3>' +
+      '<div class="sub">' + (l ? esc(l.n) : '') + '</div>' +
+      '<p>Autobús n.º ' + esc(b.id) + (st ? '<br>Última parada registrada: ' + esc(st.n) : '') + '</p>' +
+      (l ? '<p><a href="#" data-line="' + l.c + '">Ver el recorrido de la línea ' + esc(l.u) + '</a></p>' : '') +
+      '<div class="note">' + note + '</div></div>';
+  }
+  function ago(s) { return s < 90 ? 'hace ' + s + ' s' : 'hace ' + Math.round(s / 60) + ' min'; }
+
+  function renderStatus() {
+    var st = $('status'), tx = $('statusText');
+    if (!busFetched) return;
+    if (!live) {
+      st.className = '';
+      tx.textContent = 'Instantánea del ' + new Date(busUpd).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Madrid' }) + '. Sin conexión en directo.';
+      return;
+    }
+    var age = Math.round((Date.now() - busUpd) / 1000);
+    st.className = age < 240 ? 'live' : 'late';
+    tx.textContent = (age < 240 ? 'En directo' : 'La fuente va con retraso') + ' · autobuses leídos ' + ago(age);
+  }
+
+  // ---------- Aparcamientos ----------
+  function loadPark(d) {
+    groups.park.clearLayers();
+    var total = 0;
+    d.list.forEach(function (p) {
+      total += p.libres;
+      var tok = p.libres < 20 ? '--bad' : p.libres < 60 ? '--warn' : '--good';
+      var m = L.marker([p.lat, p.lon], { zIndexOffset: 500, icon: L.divIcon({ className: '', iconSize: [0, 0],
+        html: '<div class="park num" style="--c:var(' + tok + ')"><i>P</i>' + p.libres + '</div>' }) });
+      m.bindPopup('<div class="pop"><h3>Aparcamiento ' + esc(p.n) + '</h3><div class="sub">' + esc(p.d) + '</div>' +
+        '<p><span class="fig num" style="color:var(' + tok + ')">' + fmt.format(p.libres) + '</span> plazas libres</p>' +
+        '<div class="note">Aparcamiento público municipal.' + (p.aprox ? ' Ubicación aproximada: la fuente no da sus coordenadas.' : '') + '</div></div>');
+      m.addTo(groups.park);
+    });
+    $('nPark').textContent = fmt.format(total);
+  }
+
+  // ---------- Cortes ----------
+  var fDate = function (ms) { return ms ? new Date(ms).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Madrid' }) : '?'; };
+  function loadCortes(d) {
+    groups.cortes.clearLayers();
+    var now = Date.now(), n = 0;
+    d.list.forEach(function (c) {
+      if (c.hasta && c.hasta < now) return;
+      var futuro = c.desde && c.desde > now, total = c.af === 'Corte', tok = total ? '--bad' : '--warn';
+      if (!futuro) n++;
+      var m = L.marker([c.lat, c.lon], { zIndexOffset: total ? 200 : 100, icon: L.divIcon({ className: '', iconSize: [13, 13], iconAnchor: [6.5, 6.5],
+        html: '<div class="corte' + (futuro ? ' futuro' : '') + '" style="--c:var(' + tok + ')"></div>' }) });
+      m.bindPopup('<div class="pop"><h3>' + esc(c.af || 'Afección al tráfico') + '</h3><div class="sub">' + esc([c.tipo, c.dir].filter(Boolean).join(' · ')) + '</div>' +
+        '<p>' + esc(c.d) + '</p><p><span class="tag" style="background:var(' + (futuro ? '--muted' : tok) + ')">' + (futuro ? 'Programado' : 'En vigor') + '</span> ' +
+        'Del ' + fDate(c.desde) + ' al ' + fDate(c.hasta) + '</p>' + (c.nota ? '<div class="note">' + esc(c.nota) + '</div>' : '') + '</div>', { maxWidth: 280 });
+      m.addTo(groups.cortes);
+    });
+    $('nCortes').textContent = fmt.format(n);
+  }
+
+  // ---------- Cámaras ----------
+  var camMarkers = [];
+  function loadCams(d) {
+    groups.cams.clearLayers(); camMarkers = [];
+    d.list.forEach(function (c) {
+      var m = L.circleMarker([c.lat, c.lon], { radius: 5, weight: 2.5, fillOpacity: .9 });
+      m.bindPopup(function () {
+        return '<div class="pop"><h3>' + esc(c.d || c.n) + '</h3><div class="sub">' + esc(c.n) + '</div>' +
+          (c.img ? '<img alt="Imagen de la cámara" src="' + esc(c.img) + '?t=' + Math.floor(Date.now() / 30000) + '" onerror="this.outerHTML=\'<p class=&quot;sub&quot;>La imagen no se puede mostrar aquí.</p>\'">' : '') +
+          (c.url ? '<p><a href="' + esc(c.url) + '" target="_blank" rel="noopener">Abrir la cámara en movilidad.malaga.eu</a></p>' : '') + '</div>';
+      }, { maxWidth: 290 });
+      camMarkers.push(m); m.addTo(groups.cams);
+    });
+    $('nCams').textContent = fmt.format(d.list.length);
+    styleCanvas();
+  }
+
+  function styleCanvas() { // los marcadores dibujados en canvas no leen CSS: se repintan al cambiar de tema
+    var cam = css('--cam'), panel = css('--panel'), stop = css('--stop'), sf = css('--stop-fill');
+    camMarkers.forEach(function (m) { m.setStyle({ color: cam, fillColor: panel }); });
+    stopMarkers.forEach(function (m) { m.setStyle({ color: selected ? selected.color : stop, fillColor: sf, fillOpacity: 1 }); });
+  }
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', styleCanvas);
+  new MutationObserver(styleCanvas).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  // ---------- Clima ----------
+  var WMO = { 0: 'Despejado', 1: 'Poco nuboso', 2: 'Intervalos nubosos', 3: 'Nublado', 45: 'Niebla', 48: 'Niebla', 51: 'Llovizna débil', 53: 'Llovizna', 55: 'Llovizna intensa',
+    61: 'Lluvia débil', 63: 'Lluvia', 65: 'Lluvia fuerte', 80: 'Chubascos débiles', 81: 'Chubascos', 82: 'Chubascos fuertes', 95: 'Tormenta', 96: 'Tormenta con granizo', 99: 'Tormenta con granizo' };
+  var ROSA = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
+  var rumbo = function (g) { return ROSA[Math.round(g / 45) % 8]; };
+  function loadClima(d) {
+    if (d.w) $('cTiempo').innerHTML = '<b class="num">' + Math.round(d.w.temperature_2m) + ' °C</b> · ' + (WMO[d.w.weather_code] || 'Variable') +
+      ' · viento ' + Math.round(d.w.wind_speed_10m) + ' km/h del ' + rumbo(d.w.wind_direction_10m);
+    if (d.a) {
+      var q = d.a.european_aqi, lv = q <= 20 ? ['Bueno', '--good'] : q <= 40 ? ['Aceptable', '--good'] : q <= 60 ? ['Moderado', '--warn'] : q <= 80 ? ['Malo', '--bad'] : ['Muy malo', '--bad'];
+      $('cAire').innerHTML = '<span class="tag" style="background:var(' + lv[1] + ')">' + lv[0] + '</span> índice europeo <b class="num">' + q + '</b> · NO₂ ' + dec1.format(d.a.nitrogen_dioxide) + ' µg/m³';
+    }
+    if (d.m) $('cMar').innerHTML = 'Olas de <b class="num">' + dec1.format(d.m.wave_height) + ' m</b> del ' + rumbo(d.m.wave_direction) +
+      ' · agua a <b class="num">' + dec1.format(d.m.sea_surface_temperature) + ' °C</b>';
+  }
+
+  // ---------- Capas e interacción ----------
+  function applyLayer(name) {
+    var btn = document.querySelector('[data-layer="' + name + '"]');
+    btn.setAttribute('aria-pressed', String(shown[name]));
+    if (name === 'stops') return syncStops();
+    if (shown[name]) groups[name].addTo(map); else map.removeLayer(groups[name]);
+  }
+  document.querySelectorAll('.layer').forEach(function (btn) {
+    var name = btn.dataset.layer; applyLayer(name);
+    btn.addEventListener('click', function () {
+      shown[name] = !shown[name]; applyLayer(name);
+      try { localStorage.setItem('capas', JSON.stringify(shown)); } catch (e) {}
+    });
+  });
+  $('lineSel').addEventListener('change', function () { selectLine(this.value, true); styleCanvas(); });
+  $('lineClear').addEventListener('click', function () { selectLine(null); styleCanvas(); });
+  map.getContainer().addEventListener('click', function (e) {
+    var t = e.target.closest('[data-line]'); if (!t) return;
+    e.preventDefault(); map.closePopup(); selectLine(t.dataset.line, true); styleCanvas();
+  });
+  $('more').addEventListener('click', function () {
+    var open = $('panel').classList.toggle('open');
+    this.textContent = open ? 'Menos' : 'Más'; this.setAttribute('aria-expanded', String(open));
+  });
+
+  // ---------- Carga y refresco ----------
+  function get(name) { return fetch('data/' + name + '.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }); }
+  function every(name, fn, secs) {
+    var run = function () {
+      get(name).then(fn).catch(function () { if (name === 'buses' && !busFetched) $('statusText').textContent = 'No llegan datos. Se reintentará en breve.'; })
+        .then(function () { setTimeout(run, (live ? secs : Math.max(secs, 300)) * 1000); });
+    };
+    run();
+  }
+  get('lineas').then(loadLines).catch(function () {}).then(function () {
+    every('buses', loadBuses, 20);
+    setInterval(tick, 2000);
+  });
+  every('aparcamientos', loadPark, 60);
+  every('cortes', loadCortes, 600);
+  every('camaras', loadCams, 3600);
+  every('clima', loadClima, 600);
+})();
+</script>
