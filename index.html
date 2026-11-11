@@ -380,6 +380,35 @@ h1 em { font-style: normal; color: var(--accent); }
       map.on('mouseleave', c, function () { map.getCanvas().style.cursor = ''; });
     });
     map.on('click', 'stops', function (e) { var s = stops[e.features[0].properties.id]; if (s) abrirParada(s); });
+    // Pulsar una calle: su nombre y las líneas de bus que pasan por ese punto.
+    map.on('click', function (e) {
+      if (!map.getLayer('calles-toque') || map.queryRenderedFeatures(e.point, { layers: ['stops', 'cams'] }).length) return;
+      // Se busca la calle cada vez más lejos del punto pulsado, para que valga con tocar cerca de ella.
+      var f = null;
+      [5, 12, 22].some(function (r) {
+        f = map.queryRenderedFeatures([[e.point.x - r, e.point.y - r], [e.point.x + r, e.point.y + r]], { layers: ['calles-toque'] })
+          .filter(function (x) { return x.properties.name || x.properties['name:latin']; })[0];
+        return !!f;
+      });
+      if (!f) return;
+      // Las líneas se miden desde el eje de la calle pulsada y desde las demás calzadas con su mismo nombre
+      // que haya a la vista (una avenida suele tener una por sentido), no desde el punto exacto del toque.
+      var nombre = f.properties.name || f.properties['name:latin'], p = [e.lngLat.lat, e.lngLat.lng], ejes = [];
+      map.queryRenderedFeatures([[e.point.x - 60, e.point.y - 60], [e.point.x + 60, e.point.y + 60]], { layers: ['calles-toque'] }).forEach(function (x) {
+        if ((x.properties.name || x.properties['name:latin']) !== nombre) return;
+        (x.geometry.type === 'MultiLineString' ? x.geometry.coordinates : [x.geometry.coordinates]).forEach(function (linea) {
+          ejes.push(masCercano(linea.map(function (c) { return [c[1], c[0]]; }), p));
+        });
+      });
+      ejes = ejes.filter(function (q) { return dist(q, p) < 90; });
+      var vistas = {}, pasan = [];
+      (ejes.length ? ejes : [p]).forEach(function (q) { lineasEn(q).forEach(function (l) { if (!vistas[l.c]) { vistas[l.c] = 1; pasan.push(l); } }); });
+      pasan.sort(function (a, b) { return a.u.localeCompare(b.u, 'es', { numeric: true }); });
+      abrir(e.lngLat, '<div class="pop"><h3>' + esc(nombre) + '</h3>' +
+        (pasan.length ? '<div class="sub">Líneas de bus que pasan por aquí:</div><div class="chips">' + pasan.map(function (l) {
+          return '<button class="chip" type="button" style="' + estiloLinea(l) + '" data-line="' + l.c + '" title="' + esc(l.n) + '">' + esc(l.u) + '</button>'; }).join('') + '</div>'
+          : '<div class="sub">No pasa ninguna línea de la EMT por este punto.</div>') + '</div>');
+    });
     map.on('click', 'cams', function (e) { var c = cams[e.features[0].properties.i]; if (c) abrirCam(c); });
     arrancar();
   });
@@ -411,6 +440,37 @@ h1 em { font-style: normal; color: var(--accent); }
   try { var saved = JSON.parse(localStorage.getItem('capas3') || '{}'); for (var k in shown) if (typeof saved[k] === 'boolean') shown[k] = saved[k]; } catch (e) {}
 
   // ---------- Geometría ----------
+  var R = 6371000, RAD = Math.PI / 180;
+  // Distancia en metros de un punto [lat, lon] a un recorrido.
+  function distanciaA(pts, p) {
+    var k = Math.cos(p[0] * RAD), min = Infinity;
+    for (var i = 1; i < pts.length; i++) {
+      var ax = (pts[i - 1][1] - p[1]) * k, ay = pts[i - 1][0] - p[0], dx = (pts[i][1] - pts[i - 1][1]) * k, dy = pts[i][0] - pts[i - 1][0], l2 = dx * dx + dy * dy;
+      var t = l2 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / l2)) : 0, cx = ax + t * dx, cy = ay + t * dy, d = cx * cx + cy * cy;
+      if (d < min) min = d;
+    }
+    return Math.sqrt(min) * RAD * R;
+  }
+  function dist(a, b) { var x = (b[1] - a[1]) * RAD * Math.cos(a[0] * RAD), y = (b[0] - a[0]) * RAD; return Math.sqrt(x * x + y * y) * R; }
+  // Punto de una línea [lat, lon][] más cercano a p.
+  function masCercano(pts, p) {
+    var k = Math.cos(p[0] * RAD), mejor = pts[0], min = Infinity;
+    for (var i = 1; i < pts.length; i++) {
+      var ax = (pts[i - 1][1] - p[1]) * k, ay = pts[i - 1][0] - p[0], dx = (pts[i][1] - pts[i - 1][1]) * k, dy = pts[i][0] - pts[i - 1][0], l2 = dx * dx + dy * dy;
+      var t = l2 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / l2)) : 0, cx = ax + t * dx, cy = ay + t * dy, d = cx * cx + cy * cy;
+      if (d < min) { min = d; mejor = [pts[i - 1][0] + t * (pts[i][0] - pts[i - 1][0]), pts[i - 1][1] + t * (pts[i][1] - pts[i - 1][1])]; }
+    }
+    return mejor;
+  }
+  // Líneas cuyo recorrido pasa a menos de 30 m de un punto.
+  function lineasEn(p) {
+    var res = [];
+    for (var c in lines) {
+      var l = lines[c];
+      if (['1', '2'].some(function (dir) { return l.routes[dir] && distanciaA(l.routes[dir].pts, p) < 30; })) res.push(l);
+    }
+    return res.sort(function (a, b) { return a.u.localeCompare(b.u, 'es', { numeric: true }); });
+  }
   function descomprimir(g) { // enteros en diferencias -> [lat, lon]
     var pts = [], la = 0, lo = 0;
     for (var i = 0; i < g.length; i += 2) { la += g[i]; lo += g[i + 1]; pts.push([la / 1e5, lo / 1e5]); }
@@ -518,6 +578,9 @@ h1 em { font-style: normal; color: var(--accent); }
       if (map.getSource(n)) map.getSource(n).setData(fc(d[n])); else map.addSource(n, { type: 'geojson', data: fc(d[n]) });
     });
     for (var ic in iconos) if (!map.hasImage(ic)) map.addImage(ic, iconos[ic], { pixelRatio: 2 });
+    // Capa invisible con el eje de las calles del mapa base: sirve para saber qué calle se ha pulsado.
+    if (map.getSource('openmaptiles') && !map.getLayer('calles-toque')) map.addLayer({ id: 'calles-toque', type: 'line', source: 'openmaptiles', 'source-layer': 'transportation_name',
+      minzoom: 12, paint: { 'line-width': 16, 'line-opacity': 0 } });
     if (!map.getLayer('route')) {
       map.addLayer({ id: 'route-casing', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 8, 'line-opacity': .9 } });
       map.addLayer({ id: 'route', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 5 } });
