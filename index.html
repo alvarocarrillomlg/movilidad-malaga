@@ -42,7 +42,7 @@ button, select { font: inherit; color: inherit; }
 #panel {
   position: absolute; z-index: 5;
   top: calc(14px + env(safe-area-inset-top, 0px)); left: max(14px, env(safe-area-inset-left, 0px));
-  width: 348px; max-height: calc(100% - 28px);
+  width: 348px; max-height: calc(100% - 40px); /* deja sitio abajo para la línea de créditos */
   display: flex; flex-direction: column; gap: 11px;
   padding: 16px 18px 12px; overflow-y: auto;
   background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow);
@@ -62,6 +62,9 @@ h1 em { font-style: normal; color: var(--accent); }
 }
 .layer .big { grid-column: 1 / -1; font-size: 24px; font-weight: 700; letter-spacing: -.02em; line-height: 1.05; }
 .layer .lbl { font-size: 12.5px; color: var(--muted); }
+/* Rueda de carga mientras llega el número de un apartado */
+.carga { display: inline-block; width: .8em; height: .8em; vertical-align: -.05em; border: .13em solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: gira .8s linear infinite; }
+@keyframes gira { to { transform: rotate(360deg); } }
 .layer .sw { width: 12px; height: 12px; flex: none; }
 /* Apartado activado en verde, desactivado en rojo. */
 .layer[aria-pressed="true"] { background: var(--si-fondo); border-color: var(--si-borde); }
@@ -118,24 +121,14 @@ h1 em { font-style: normal; color: var(--accent); }
 #app:not(.mini) #abrir, #app.mini #panel { display: none; }
 
 /* Créditos obligatorios del mapa y de los datos: una línea discreta, sin botón. */
-#creditos { position: absolute; z-index: 1; right: 56px; bottom: calc(4px + env(safe-area-inset-bottom, 0px)); max-width: calc(100% - 440px); padding: 1px 6px; border-radius: 4px;
-  background: color-mix(in srgb, var(--panel) 70%, transparent); color: var(--muted); font-size: 10px; line-height: 1.3; text-align: right; }
+#creditos { position: absolute; z-index: 1; left: max(14px, env(safe-area-inset-left, 0px)); bottom: calc(3px + env(safe-area-inset-bottom, 0px)); max-width: calc(100% - 28px);
+  padding: 1px 5px; border-radius: 4px; background: color-mix(in srgb, var(--panel) 70%, transparent); color: var(--muted); font-size: 10px; line-height: 1.3; }
 #creditos a { color: inherit; text-decoration: none; }
 
 /* Botones del panel: desplegar (móvil) y minimizar */
 #acciones { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; }
 #acciones button { padding: 5px 10px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-size: 12.5px; }
 
-/* Buscador de calles */
-#buscar { display: flex; gap: 6px; }
-#q { flex: 1; min-width: 0; height: 34px; padding: 0 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 9px; font: inherit; color: inherit; }
-#buscar button { width: 38px; height: 34px; display: grid; place-items: center; background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; cursor: pointer; }
-#buscar svg { width: 16px; height: 16px; }
-#resultados { list-style: none; margin: -6px 0 0; padding: 0; display: grid; gap: 2px; font-size: 13px; }
-#resultados button { width: 100%; text-align: left; padding: 7px 10px; background: var(--panel-2); border: 0; border-radius: 8px; cursor: pointer; }
-#resultados button:hover { outline: 1px solid var(--line); }
-#resultados .sub { display: block; color: var(--muted); font-size: 12px; }
-#resultados .msg { padding: 2px 2px; color: var(--muted); font-size: 12.5px; }
 #more { display: none; }
 
 /* ---------- Marcadores ---------- */
@@ -198,7 +191,7 @@ h1 em { font-style: normal; color: var(--accent); }
 @media (max-width: 720px) {
   #panel {
     top: auto; left: max(10px, env(safe-area-inset-left, 0px)); right: max(10px, env(safe-area-inset-right, 0px));
-    bottom: calc(10px + env(safe-area-inset-bottom, 0px)); width: auto; max-height: 72%; padding: 13px 14px 12px; gap: 10px;
+    bottom: calc(32px + env(safe-area-inset-bottom, 0px)); width: auto; max-height: 72%; padding: 13px 14px 12px; gap: 10px;
   }
   h1 { font-size: 17px; padding-right: 64px; }
   #layers { grid-template-columns: repeat(4, 1fr); gap: 6px; }
@@ -212,8 +205,8 @@ h1 em { font-style: normal; color: var(--accent); }
   #mini { order: -1; position: static; margin: -13px -14px -4px; width: calc(100% + 28px); border-radius: 13px 13px 0 0; height: 24px; }
   #mini svg { transform: rotate(180deg); }
   #acciones { top: 34px; }
-  #creditos { right: auto; left: max(6px, env(safe-area-inset-left, 0px)); bottom: auto; top: calc(4px + env(safe-area-inset-top, 0px)); max-width: calc(100% - 62px); text-align: left; }
-  #abrir { top: auto; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); left: max(10px, env(safe-area-inset-left, 0px)); right: max(10px, env(safe-area-inset-right, 0px)); width: auto; height: 30px; }
+  #creditos { left: max(10px, env(safe-area-inset-left, 0px)); max-width: calc(100% - 20px); font-size: 9.5px; }
+  #abrir { top: auto; bottom: calc(32px + env(safe-area-inset-bottom, 0px)); left: max(10px, env(safe-area-inset-left, 0px)); right: max(10px, env(safe-area-inset-right, 0px)); width: auto; height: 30px; }
   #abrir svg { transform: none; }
   #panel:not(.open) .extra { display: none; }
   #autorPanel { text-align: center; margin-top: 0; }
@@ -226,6 +219,7 @@ h1 em { font-style: normal; color: var(--accent); }
 }
 @media (prefers-reduced-motion: reduce) {
   #status.live #dot { animation: none; }
+  .carga { animation-duration: 2.4s; }
 }
 </style>
 
@@ -239,27 +233,21 @@ h1 em { font-style: normal; color: var(--accent); }
     <h1>La movilidad de Málaga <em>en directo</em></h1>
     <div id="status" role="status"><span id="dot"></span><span id="statusText">Cargando datos…</span></div>
 
-    <form id="buscar" role="search">
-      <input id="q" type="search" placeholder="Buscar calle o lugar…" aria-label="Buscar una calle o un lugar de Málaga" autocomplete="off">
-      <button type="submit" aria-label="Buscar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg></button>
-    </form>
-    <ul id="resultados" hidden></ul>
-
     <div id="layers">
       <button class="layer" type="button" data-layer="buses" aria-pressed="true">
-        <span class="big num" id="nBuses">–</span><span class="sw sw-bus"></span><span class="lbl">Buses</span>
+        <span class="big num" id="nBuses"><span class="carga" role="img" aria-label="Cargando"></span></span><span class="sw sw-bus"></span><span class="lbl">Buses</span>
       </button>
       <button class="layer" type="button" data-layer="park" aria-pressed="true">
-        <span class="big num" id="nPark">–</span><span class="sw sw-park"></span><span class="lbl">Plazas parking</span>
+        <span class="big num" id="nPark"><span class="carga" role="img" aria-label="Cargando"></span></span><span class="sw sw-park"></span><span class="lbl">Plazas parking</span>
       </button>
       <button class="layer" type="button" data-layer="cortes" aria-pressed="true">
-        <span class="big num" id="nCortes">–</span><span class="sw sw-corte"></span><span class="lbl">Cortes y obras</span>
+        <span class="big num" id="nCortes"><span class="carga" role="img" aria-label="Cargando"></span></span><span class="sw sw-corte"></span><span class="lbl">Cortes y obras</span>
       </button>
       <button class="layer" type="button" data-layer="cams" aria-pressed="true">
-        <span class="big num" id="nCams">–</span><span class="sw sw-ico"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#33475b" stroke="#fff" stroke-width="1.5"/><rect x="5.5" y="8.5" width="9" height="7" rx="1.5" fill="#fff"/><path fill="#fff" d="M15.2 11l3.6-2.2v6.4L15.2 13z"/></svg></span><span class="lbl">Cámaras en directo</span>
+        <span class="big num" id="nCams"><span class="carga" role="img" aria-label="Cargando"></span></span><span class="sw sw-ico"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#33475b" stroke="#fff" stroke-width="1.5"/><rect x="5.5" y="8.5" width="9" height="7" rx="1.5" fill="#fff"/><path fill="#fff" d="M15.2 11l3.6-2.2v6.4L15.2 13z"/></svg></span><span class="lbl">Cámaras en directo</span>
       </button>
       <button class="layer wide extra" type="button" data-layer="stops" aria-pressed="true">
-        <span class="sw sw-ico"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="22" height="22" rx="5" fill="#1766c2" stroke="#fff" stroke-width="1.5"/><path fill="#fff" d="M7 6.5h10A1.5 1.5 0 0 1 18.5 8v7.5a1 1 0 0 1-1 1H17v1a1 1 0 0 1-2 0v-1H9v1a1 1 0 0 1-2 0v-1h-.5a1 1 0 0 1-1-1V8A1.5 1.5 0 0 1 7 6.5z"/><rect x="7" y="8" width="10" height="4" rx=".6" fill="#1766c2"/><circle cx="8.6" cy="14.2" r="1" fill="#1766c2"/><circle cx="15.4" cy="14.2" r="1" fill="#1766c2"/></svg></span><span class="lbl"><span class="num" id="nStops">–</span> paradas de bus</span><span class="hint" id="stopHint"></span>
+        <span class="sw sw-ico"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="22" height="22" rx="5" fill="#1766c2" stroke="#fff" stroke-width="1.5"/><path fill="#fff" d="M7 6.5h10A1.5 1.5 0 0 1 18.5 8v7.5a1 1 0 0 1-1 1H17v1a1 1 0 0 1-2 0v-1H9v1a1 1 0 0 1-2 0v-1h-.5a1 1 0 0 1-1-1V8A1.5 1.5 0 0 1 7 6.5z"/><rect x="7" y="8" width="10" height="4" rx=".6" fill="#1766c2"/><circle cx="8.6" cy="14.2" r="1" fill="#1766c2"/><circle cx="15.4" cy="14.2" r="1" fill="#1766c2"/></svg></span><span class="lbl"><span class="num" id="nStops">…</span> paradas de bus</span><span class="hint" id="stopHint"></span>
       </button>
     </div>
 
@@ -623,39 +611,6 @@ h1 em { font-style: normal; color: var(--accent); }
     camTimer = setInterval(function () { if (document.body.contains(img)) cargar(); else clearInterval(camTimer); }, 15000);
   }
 
-  // ---------- Buscador de calles (OpenStreetMap) ----------
-  function irA(lat, lon, nombre, detalle) {
-    $('resultados').hidden = true;
-    map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 16.5), duration: 1200 });
-    abrir([lon, lat], '<div class="pop"><h3>' + esc(nombre) + '</h3>' + (detalle ? '<div class="sub">' + esc(detalle) + '</div>' : '') + comoLlegar(lat, lon) + '</div>');
-  }
-  $('buscar').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var q = $('q').value.trim(), ul = $('resultados');
-    if (q.length < 3) return;
-    var aviso = function (t) { ul.innerHTML = '<li class="msg">' + t + '</li>'; ul.hidden = false; };
-    aviso('Buscando…');
-    fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&accept-language=es&bounded=1&viewbox=-4.62,36.80,-4.28,36.62&q=' + encodeURIComponent(q))
-      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(function (res) {
-        if (!res.length) return aviso('No se ha encontrado en Málaga. Prueba con otro nombre.');
-        var items = res.map(function (x) {
-          var partes = String(x.display_name).split(', ');
-          return { lat: Number(x.lat), lon: Number(x.lon), n: x.name || partes[0], d: partes.slice(1, 3).join(', ') };
-        });
-        if (items.length === 1) return irA(items[0].lat, items[0].lon, items[0].n, items[0].d);
-        ul.innerHTML = ''; ul.hidden = false;
-        items.forEach(function (it) {
-          var li = document.createElement('li'), b = document.createElement('button');
-          b.type = 'button'; b.innerHTML = esc(it.n) + '<span class="sub">' + esc(it.d) + '</span>';
-          b.addEventListener('click', function () { irA(it.lat, it.lon, it.n, it.d); });
-          li.appendChild(b); ul.appendChild(li);
-        });
-      })
-      .catch(function () { aviso('El buscador no está disponible ahora.'); });
-  });
-  $('q').addEventListener('input', function () { if (!this.value) $('resultados').hidden = true; });
-
   // ---------- Reloj ----------
   var fHora = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Madrid' });
   function reloj() {
@@ -707,7 +662,13 @@ h1 em { font-style: normal; color: var(--accent); }
     run();
   }
   function arrancar() {
-    get('lineas').then(loadLines).catch(function () {}).then(function () {
+    get('lineas').then(function (d) {
+      loadLines(d);
+      // Si llegaron sin trazados ni colores oficiales (falló su descarga), se vuelve a cargar cuando ya estén.
+      if (d.parcial) setTimeout(function comprobar() {
+        get('lineas').then(function (n) { if (n.parcial) setTimeout(comprobar, 90000); else location.reload(); }).catch(function () { setTimeout(comprobar, 90000); });
+      }, 75000);
+    }).catch(function () {}).then(function () {
       every('buses', loadBuses, 20);
       setInterval(renderStatus, 1000);
     });

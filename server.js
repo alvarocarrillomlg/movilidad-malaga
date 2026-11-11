@@ -18,10 +18,10 @@ const cache = {};
 async function datos(nombre) {
   const [leer, ttl] = DATOS[nombre];
   const c = cache[nombre];
-  if (c && Date.now() - c.t < ttl * 1000) return c.json;
+  if (c && c.json && Date.now() - c.t < (c.parcial ? 60 : ttl) * 1000) return c.json;
   if (c?.pendiente) return c.pendiente;
   const pendiente = leer().then((d) => {
-    cache[nombre] = { t: Date.now(), json: JSON.stringify(d) };
+    cache[nombre] = { t: Date.now(), json: JSON.stringify(d), parcial: !!d.parcial }; // un resultado incompleto se reintenta al minuto
     return cache[nombre].json;
   }).catch((e) => {
     console.warn(`${nombre}: ${e.message}`);

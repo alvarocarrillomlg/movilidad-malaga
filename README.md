@@ -1,6 +1,6 @@
 # La movilidad de Málaga en directo
 
-Mapa en 3D de la movilidad de Málaga: autobuses de la EMT (en su última posición publicada, con el color oficial y el recorrido real de cada línea), paradas, aparcamientos municipales, cortes de tráfico, cámaras de tráfico (municipales y de la DGT) y buscador de calles.
+Mapa en 3D de la movilidad de Málaga: autobuses de la EMT (en su última posición publicada, con el color oficial y el recorrido real de cada línea), paradas, aparcamientos municipales, cortes de tráfico, cámaras de tráfico (municipales y de la DGT).
 
 ## Uso
 
@@ -24,7 +24,6 @@ La lectura de las fuentes está en `lib/fuentes.js`, que comparten el servidor l
 
 - [Datos abiertos del Ayuntamiento de Málaga](https://datosabiertos.malaga.eu) (CC BY 4.0)
 - [DGT](https://nap.dgt.es): cámaras de carretera (DATEX II)
-- Buscador de calles: [Nominatim](https://nominatim.openstreetmap.org) (OpenStreetMap)
 - Mapa base: [OpenFreeMap](https://openfreemap.org) © OpenMapTiles, datos de [OpenStreetMap](https://www.openstreetmap.org/copyright). Si no está disponible, la página usa el mapa plano guardado en `tiles/`.
 
 ## Autoría
