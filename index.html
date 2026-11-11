@@ -18,6 +18,10 @@
   --stop-fill: #ffffff;
   --on-color: #ffffff;
   --edificio: #cfd6d8;
+  --si-fondo: #dff3e6;
+  --si-borde: #2f9a5f;
+  --no-fondo: #fbe3e3;
+  --no-borde: #d9534f;
   --senal: #d3202b;
   --senal-blanco: #ffffff;
   --shadow: 0 6px 24px rgba(19, 34, 44, .16);
@@ -54,15 +58,15 @@ h1 em { font-style: normal; color: var(--accent); }
 #layers { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .layer {
   display: grid; grid-template-columns: auto 1fr; column-gap: 8px; row-gap: 2px; align-items: center; text-align: left;
-  padding: 10px 11px; background: var(--panel-2); border: 1px solid transparent; border-radius: 10px; cursor: pointer;
+  padding: 10px 11px; background: var(--panel-2); border: 1.5px solid transparent; border-radius: 10px; cursor: pointer;
 }
-.layer:hover { border-color: var(--line); }
 .layer .big { grid-column: 1 / -1; font-size: 24px; font-weight: 700; letter-spacing: -.02em; line-height: 1.05; }
 .layer .lbl { font-size: 12.5px; color: var(--muted); }
 .layer .sw { width: 12px; height: 12px; flex: none; }
-.layer[aria-pressed="false"] { background: transparent; border-color: var(--line); }
-.layer[aria-pressed="false"] .big, .layer[aria-pressed="false"] .lbl { color: var(--muted); opacity: .7; text-decoration: line-through; text-decoration-thickness: 1px; }
-.layer[aria-pressed="false"] .sw { opacity: .35; }
+/* Apartado activado en verde, desactivado en rojo. */
+.layer[aria-pressed="true"] { background: var(--si-fondo); border-color: var(--si-borde); }
+.layer[aria-pressed="false"] { background: var(--no-fondo); border-color: var(--no-borde); }
+.layer:hover { filter: brightness(.97); }
 .sw-bus { border-radius: 4px; background: var(--accent); }
 .sw-park { border-radius: 3px; background: var(--good); }
 .sw-corte { border-radius: 50%; background: linear-gradient(var(--senal-blanco), var(--senal-blanco)) center / 8px 3px no-repeat var(--senal); width: 14px; height: 14px; }
@@ -359,8 +363,9 @@ h1 em { font-style: normal; color: var(--accent); }
     return new maplibregl.Marker({ element: el }).setLngLat(lngLat).addTo(map);
   }
 
-  var shown = { buses: true, park: true, cortes: true, cams: true, stops: true };
-  try { var saved = JSON.parse(localStorage.getItem('capas') || '{}'); for (var k in shown) if (typeof saved[k] === 'boolean') shown[k] = saved[k]; } catch (e) {}
+  // De inicio solo se ven los buses y los aparcamientos; el resto se activa desde el panel.
+  var shown = { buses: true, park: true, cortes: false, cams: false, stops: false };
+  try { var saved = JSON.parse(localStorage.getItem('capas2') || '{}'); for (var k in shown) if (typeof saved[k] === 'boolean') shown[k] = saved[k]; } catch (e) {}
 
   // ---------- Geometría ----------
   function descomprimir(g) { // enteros en diferencias -> [lat, lon]
@@ -658,7 +663,7 @@ h1 em { font-style: normal; color: var(--accent); }
     var name = btn.dataset.layer; applyLayer(name);
     btn.addEventListener('click', function () {
       shown[name] = !shown[name]; applyLayer(name);
-      try { localStorage.setItem('capas', JSON.stringify(shown)); } catch (e) {}
+      try { localStorage.setItem('capas2', JSON.stringify(shown)); } catch (e) {}
     });
   });
   $('lineClear').addEventListener('click', function () { selectLine(null); });
