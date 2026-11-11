@@ -47,7 +47,7 @@ button, select { font: inherit; color: inherit; }
   padding: 16px 18px 12px; overflow-y: auto;
   background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow);
 }
-h1 { margin: 0; padding-right: 64px; font-size: 21px; line-height: 1.12; font-weight: 700; letter-spacing: -.015em; text-wrap: balance; }
+h1 { margin: 0; font-size: 21px; line-height: 1.12; font-weight: 700; letter-spacing: -.015em; text-wrap: balance; }
 h1 em { font-style: normal; color: var(--accent); }
 #status { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12.5px; min-height: 18px; }
 #dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
@@ -108,7 +108,13 @@ h1 em { font-style: normal; color: var(--accent); }
   position: absolute; z-index: 3; background: var(--panel); border: 1px solid var(--line); border-radius: 99px; box-shadow: var(--shadow); white-space: nowrap;
 }
 #autor { left: 50%; transform: translateX(-50%); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); padding: 6px 13px; }
-#abrir { top: calc(14px + env(safe-area-inset-top, 0px)); left: max(14px, env(safe-area-inset-left, 0px)); padding: 9px 15px; font-weight: 600; cursor: pointer; }
+#abrir { top: calc(14px + env(safe-area-inset-top, 0px)); left: max(14px, env(safe-area-inset-left, 0px)); width: 348px; border-radius: 12px; }
+/* Franja con flecha para minimizar el panel y volver a desplegarlo. */
+.franja { display: grid; place-items: center; height: 26px; padding: 0; color: var(--muted); cursor: pointer; }
+.franja svg { width: 22px; height: 22px; }
+.franja:hover { color: var(--ink); }
+#mini { flex: none; margin: -2px -18px -12px; width: calc(100% + 36px); background: var(--panel-2); border: 0; border-top: 1px solid var(--line); border-radius: 0 0 13px 13px; position: sticky; bottom: -12px; }
+#abrir svg { transform: rotate(180deg); } /* en ordenador el panel se recoge hacia arriba y se despliega hacia abajo */
 #app:not(.mini) #autor, #app:not(.mini) #abrir, #app.mini #panel { display: none; }
 
 /* Botones del panel: desplegar (móvil) y minimizar */
@@ -189,7 +195,7 @@ h1 em { font-style: normal; color: var(--accent); }
     top: auto; left: max(10px, env(safe-area-inset-left, 0px)); right: max(10px, env(safe-area-inset-right, 0px));
     bottom: calc(10px + env(safe-area-inset-bottom, 0px)); width: auto; max-height: 72%; padding: 13px 14px 12px; gap: 10px;
   }
-  h1 { font-size: 17px; padding-right: 128px; }
+  h1 { font-size: 17px; padding-right: 64px; }
   #layers { grid-template-columns: repeat(4, 1fr); gap: 6px; }
   .layer { padding: 7px 8px; grid-template-columns: 1fr; align-content: start; }
   .layer .sw { display: none; }
@@ -197,7 +203,12 @@ h1 em { font-style: normal; color: var(--accent); }
   .layer .lbl { font-size: 11px; line-height: 1.15; min-width: 0; }
   #more { display: block; }
   #acciones { top: 10px; right: 10px; }
-  #abrir { top: auto; bottom: calc(46px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); }
+  /* En móvil el panel está abajo: la franja va arriba, se recoge hacia abajo y se despliega hacia arriba. */
+  #mini { order: -1; position: static; margin: -13px -14px -4px; width: calc(100% + 28px); border-top: 0; border-bottom: 1px solid var(--line); border-radius: 13px 13px 0 0; height: 24px; }
+  #mini svg { transform: rotate(180deg); }
+  #acciones { top: 34px; }
+  #abrir { top: auto; bottom: calc(46px + env(safe-area-inset-bottom, 0px)); left: max(10px, env(safe-area-inset-left, 0px)); right: max(10px, env(safe-area-inset-right, 0px)); width: auto; height: 30px; }
+  #abrir svg { transform: none; }
   #panel:not(.open) .extra { display: none; }
   #autorPanel { text-align: center; margin-top: 0; }
   #chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; margin-right: -14px; padding-right: 14px; scrollbar-width: thin; }
@@ -218,7 +229,6 @@ h1 em { font-style: normal; color: var(--accent); }
   <section id="panel" aria-label="Resumen y capas">
     <div id="acciones">
       <button id="more" type="button" aria-expanded="false">Más</button>
-      <button id="mini" type="button" title="Ocultar el panel para ver todo el mapa">Ocultar</button>
     </div>
     <h1>La movilidad de Málaga <em>en directo</em></h1>
     <div id="status" role="status"><span id="dot"></span><span id="statusText">Cargando datos…</span></div>
@@ -265,9 +275,10 @@ h1 em { font-style: normal; color: var(--accent); }
       La posición de los buses depende de la EMT, que la publica cada 5 minutos aproximadamente.
     </div>
     <div id="autorPanel">Elaborado por: <b>Álvaro Carrillo</b></div>
+    <button id="mini" class="franja" type="button" aria-label="Minimizar el panel" title="Minimizar el panel para ver todo el mapa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
   </section>
 
-  <button id="abrir" type="button">Mostrar el panel</button>
+  <button id="abrir" class="franja" type="button" aria-label="Mostrar el panel" title="Mostrar el panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
   <div id="autor">Elaborado por: <b>Álvaro Carrillo</b></div>
 </div>
 
