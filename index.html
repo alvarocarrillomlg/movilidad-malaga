@@ -110,10 +110,11 @@ h1 em { font-style: normal; color: var(--accent); }
 #autor { left: 50%; transform: translateX(-50%); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); padding: 6px 13px; }
 #abrir { top: calc(14px + env(safe-area-inset-top, 0px)); left: max(14px, env(safe-area-inset-left, 0px)); width: 348px; border-radius: 12px; }
 /* Franja con flecha para minimizar el panel y volver a desplegarlo. */
-.franja { display: grid; place-items: center; height: 26px; padding: 0; color: var(--muted); cursor: pointer; }
+.franja { display: grid; place-items: center; height: 26px; padding: 0; color: var(--on-color); cursor: pointer; }
 .franja svg { width: 22px; height: 22px; }
-.franja:hover { color: var(--ink); }
-#mini { flex: none; margin: -2px -18px -12px; width: calc(100% + 36px); background: var(--panel-2); border: 0; border-top: 1px solid var(--line); border-radius: 0 0 13px 13px; position: sticky; bottom: -12px; }
+.franja:hover { filter: brightness(1.12); }
+#mini, #abrir { background: var(--accent); border-color: var(--accent); } /* el mismo verde que «en directo» */
+#mini { flex: none; margin: -2px -18px -12px; width: calc(100% + 36px); border: 0; border-radius: 0 0 13px 13px; position: sticky; bottom: -12px; }
 #abrir svg { transform: rotate(180deg); } /* en ordenador el panel se recoge hacia arriba y se despliega hacia abajo */
 #app:not(.mini) #autor, #app:not(.mini) #abrir, #app.mini #panel { display: none; }
 
@@ -204,7 +205,7 @@ h1 em { font-style: normal; color: var(--accent); }
   #more { display: block; }
   #acciones { top: 10px; right: 10px; }
   /* En móvil el panel está abajo: la franja va arriba, se recoge hacia abajo y se despliega hacia arriba. */
-  #mini { order: -1; position: static; margin: -13px -14px -4px; width: calc(100% + 28px); border-top: 0; border-bottom: 1px solid var(--line); border-radius: 13px 13px 0 0; height: 24px; }
+  #mini { order: -1; position: static; margin: -13px -14px -4px; width: calc(100% + 28px); border-radius: 13px 13px 0 0; height: 24px; }
   #mini svg { transform: rotate(180deg); }
   #acciones { top: 34px; }
   #abrir { top: auto; bottom: calc(46px + env(safe-area-inset-bottom, 0px)); left: max(10px, env(safe-area-inset-left, 0px)); right: max(10px, env(safe-area-inset-right, 0px)); width: auto; height: 30px; }
