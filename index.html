@@ -588,7 +588,7 @@ h1 em { font-style: normal; color: var(--accent); }
       corteMarkers.push(marcador('corte-ic', '<div class="corte' + (total ? '' : ' parcial') + (futuro ? ' futuro' : '') + '"></div>', [c.lon, c.lat], function () {
         abrir([c.lon, c.lat], '<div class="pop"><h3>' + esc(c.af || 'Afección al tráfico') + '</h3><div class="sub">' + esc([c.tipo, c.dir].filter(Boolean).join(' · ')) + '</div>' +
           '<p>' + esc(c.d) + '</p><p><span class="tag" style="background:var(' + (futuro ? '--muted' : tok) + ')">' + (futuro ? 'Programado' : 'En vigor') + '</span> ' +
-          'Del ' + fDate(c.desde) + ' al ' + fDate(c.hasta) + '</p>' + comoLlegar(c.lat, c.lon) + (c.nota ? '<div class="note">' + esc(c.nota) + '</div>' : '') + '</div>', 290);
+          'Del ' + fDate(c.desde) + ' al ' + fDate(c.hasta) + '</p>' + (c.nota ? '<div class="note">' + esc(c.nota) + '</div>' : '') + '</div>', 290);
       }));
     });
     $('nCortes').textContent = fmt.format(n);
@@ -606,7 +606,7 @@ h1 em { font-style: normal; color: var(--accent); }
           (x.ef.length || x.carril ? '<p>' + esc(x.ef.join(' · ') + (x.carril ? (x.ef.length ? ' (' + x.carril + ')' : 'Afecta a: ' + x.carril) : '')) + '</p>' : '') +
           '<p><span class="tag" style="background:var(' + (x.grave ? '--bad' : '--warn') + ')">Activa</span> ' +
           (x.desde ? 'Desde el ' + fDate(x.desde) : '') + (x.hasta ? ', prevista hasta el ' + fDate(x.hasta) : '') + '</p>' +
-          comoLlegar(x.lat, x.lon) + '<div class="note">Fuente: DGT. Leída a las ' + hHora.format(new Date(d.t)) + '.</div></div>', 290);
+          '<div class="note">Fuente: DGT. Leída a las ' + hHora.format(new Date(d.t)) + '.</div></div>', 290);
       });
       m.getElement().style.zIndex = x.grave ? 2 : 1;
       incidMarkers.push(m);
@@ -621,7 +621,7 @@ h1 em { font-style: normal; color: var(--accent); }
     abrir([c.lon, c.lat], '<div class="pop"><h3>' + esc(c.d || c.n) + '</h3><div class="sub">' + esc(titular) + '</div>' +
       (c.img ? '<img id="camImg" alt="Imagen de la cámara"><div class="sub" id="camHora"></div>' : '') +
       (c.url ? '<p><a href="' + esc(c.url) + '" target="_blank" rel="noopener">Abrir la cámara en movilidad.malaga.eu</a></p>' : '') +
-      comoLlegar(c.lat, c.lon) + '</div>', 300);
+      '</div>', 300);
     var img = $('camImg');
     if (!img) return;
     // El servidor municipal no entrega la imagen si la petición indica que viene de otra web: no se envía ese dato.
