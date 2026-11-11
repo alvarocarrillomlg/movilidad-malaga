@@ -60,6 +60,7 @@ async function main() {
     try {
       let m;
       if (ruta === '/' || ruta === '/index.html') enviar(200, 'text/html; charset=utf-8', pagina(fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8')));
+      else if (ruta === '/calles.json') enviar(200, 'application/json; charset=utf-8', fs.readFileSync(path.join(ROOT, 'calles.json')), 'max-age=86400');
       else if ((m = ruta.match(/^\/data\/(\w+)\.json$/)) && DATOS[m[1]]) enviar(200, 'application/json; charset=utf-8', await datos(m[1]));
       else if ((m = ruta.match(/^\/tiles\/(\d{1,2})\/(\d+)\/(\d+)\.png$/))) enviar(200, 'image/png', await tesela(m[1], m[2], m[3]), 'max-age=604800');
       else enviar(404, 'text/plain; charset=utf-8', 'No encontrado');

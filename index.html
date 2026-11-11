@@ -708,53 +708,157 @@ h1 em { font-style: normal; color: var(--accent); }
     camTimer = setInterval(function () { if (document.body.contains(img)) cargar(); else clearInterval(camTimer); }, 15000);
   }
 
-  // ---------- Buscador de calles (OpenStreetMap) ----------
+  // ---------- Buscador de calles ----------
+  // Busca en el callejero municipal tolerando erratas, tildes y el tipo de vía equivocado («calle» por «avenida»).
   function irA(lat, lon, nombre, detalle) {
     $('resultados').hidden = true;
     map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 16.5), duration: 1200 });
     abrir([lon, lat], '<div class="pop"><h3>' + esc(nombre) + '</h3>' + (detalle ? '<div class="sub">' + esc(detalle) + '</div>' : '') + comoLlegar(lat, lon) + '</div>');
   }
-  $('buscar').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var q = $('q').value.trim(), ul = $('resultados');
-    if (q.length < 3) return;
-    var aviso = function (t) { ul.innerHTML = '<li class="msg">' + t + '</li>'; ul.hidden = false; };
-    aviso('Buscando…');
-    fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=15&accept-language=es&bounded=1&viewbox=-4.62,36.80,-4.28,36.62&q=' + encodeURIComponent(q))
+  var plano = function (t) { return String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9ñ]+/g, ' ').trim(); };
+  // Tipos de vía y sus abreviaturas -> forma común. No cuentan para encontrar la calle, solo para desempatar.
+  var TIPOS = { calle: 'calle', c: 'calle', cl: 'calle', cll: 'calle', avenida: 'avenida', avda: 'avenida', av: 'avenida', avd: 'avenida', plaza: 'plaza', pza: 'plaza', pl: 'plaza',
+    plazuela: 'plazuela', paseo: 'paseo', pso: 'paseo', camino: 'camino', cno: 'camino', carretera: 'carretera', ctra: 'carretera', callejon: 'callejon', pasaje: 'pasaje', pje: 'pasaje',
+    glorieta: 'glorieta', gta: 'glorieta', rotonda: 'glorieta', alameda: 'alameda', travesia: 'travesia', bulevar: 'bulevar', carril: 'carril', carrera: 'carrera', puente: 'puente',
+    parque: 'parque', jardin: 'jardin', jardines: 'jardin', subida: 'subida', senda: 'senda', pasillo: 'pasillo', grupo: 'grupo', autovia: 'autovia', ronda: 'ronda', urbanizacion: 'urbanizacion' };
+  var VACIAS = { de: 1, del: 1, la: 1, las: 1, los: 1, el: 1, y: 1, e: 1, en: 1, d: 1 };
+  // Abreviaturas habituales al escribir una dirección.
+  var ABREV = { dr: 'doctor', dra: 'doctora', sta: 'santa', sto: 'santo', sn: 'san', ntra: 'nuestra', sra: 'señora', gral: 'general', cte: 'comandante', pte: 'presidente',
+    ing: 'ingeniero', prof: 'profesor', arq: 'arquitecto', stmo: 'santisimo', fco: 'francisco', mª: 'maria', ma: 'maria' };
+  // Reduce una palabra a cómo suena, para que «bictoria», «victorya» o «Eroe» encuentren «Victoria» y «Héroe».
+  var sonido = function (w) {
+    return w.replace(/h/g, '').replace(/v/g, 'b').replace(/ll|y/g, 'i').replace(/qu|k|c(?=[aou]|$|[^ei])/g, 'k').replace(/[zc]/g, 's').replace(/x/g, 's')
+      .replace(/g(?=[ei])/g, 'j').replace(/ñ/g, 'n').replace(/(.)\1+/g, '$1');
+  };
+  // Distancia de edición (inserciones, borrados, cambios y letras bailadas), cortada en «max».
+  function distancia(a, b, max) {
+    if (Math.abs(a.length - b.length) > max) return max + 1;
+    var ant2 = null, ant = [], act, i, j;
+    for (j = 0; j <= b.length; j++) ant[j] = j;
+    for (i = 1; i <= a.length; i++) {
+      act = [i]; var min = i;
+      for (j = 1; j <= b.length; j++) {
+        var c = a[i - 1] === b[j - 1] ? 0 : 1;
+        act[j] = Math.min(ant[j] + 1, act[j - 1] + 1, ant[j - 1] + c);
+        if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) act[j] = Math.min(act[j], ant2[j - 2] + 1);
+        if (act[j] < min) min = act[j];
+      }
+      if (min > max) return max + 1;
+      ant2 = ant; ant = act;
+    }
+    return ant[b.length];
+  }
+  // Parecido entre una palabra escrita y una del callejero: 1 igual, 0 nada que ver.
+  function parecido(q, w, ultima) {
+    if (q === w) return 1;
+    if (ultima && q.length >= 2 && w.indexOf(q) === 0) return .9;        // todavía se está escribiendo
+    var sq = sonido(q), sw = sonido(w);
+    if (sq === sw) return .93;
+    if (ultima && sq.length >= 2 && sw.indexOf(sq) === 0) return .85;
+    // Erratas admitidas según lo larga que sea la palabra (también medida por cómo suena, que es más corta).
+    var tope = function (n) { return n <= 3 ? 0 : n <= 6 ? 1 : 2; };
+    var max = tope(q.length), maxS = tope(sq.length);
+    var d = max ? distancia(q, w, max) : 9, ds = maxS ? distancia(sq, sw, maxS) : 9;
+    if (d <= max && max) return 1 - d * .22;
+    if (ds <= maxS && maxS) return 1 - ds * .22;
+    if (ultima && sq.length >= 4 && sw.length > sq.length && distancia(sq, sw.slice(0, sq.length), 1) <= 1) return .7;
+    return 0;
+  }
+  var NOMBRES_TIPO = Object.keys(TIPOS).filter(function (k) { return k.length >= 5; });
+  function tipoParecido(w) { // tipo de vía escrito con una errata
+    if (w.length < 4) return '';
+    for (var i = 0; i < NOMBRES_TIPO.length; i++) {
+      var k = NOMBRES_TIPO[i];
+      if (sonido(k) === sonido(w) || distancia(w, k, 1) <= 1) return TIPOS[k];
+    }
+    return '';
+  }
+  var calles = null, callesPend = null;
+  function pedirCalles() {
+    if (calles) return Promise.resolve(calles);
+    if (!callesPend) callesPend = fetch('calles.json').then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (d) {
+      calles = d.calles.map(function (c) {
+        var pal = plano(c[0]).split(' '), tipo = TIPOS[pal[0]] ? TIPOS[pal[0]] : '';
+        return { n: c[0], lat: c[1], lon: c[2], tipo: tipo, pal: pal.slice(tipo ? 1 : 0).filter(function (w) { return !VACIAS[w]; }) };
+      });
+      return calles;
+    }, function (e) { callesPend = null; throw e; });
+    return callesPend;
+  }
+  function buscarCalles(texto) {
+    var todas = plano(texto).split(' ').filter(Boolean).map(function (w) { return ABREV[w] || w; }), tipo = '', q = [];
+    todas.forEach(function (w, i) {
+      var t = TIPOS[w] || (i === 0 && todas.length > 1 ? tipoParecido(w) : '');   // «plasa», «abenida», «cale»…
+      if (t && !tipo) tipo = t; else if (!VACIAS[w]) q.push(w);
+    });
+    // Solo el tipo («alameda», «parque»): primero las vías de ese tipo, y luego las que lo llevan en el nombre.
+    if (!q.length && tipo) {
+      var palabra = todas.filter(function (w) { return !VACIAS[w]; })[0];
+      var deTipo = calles.filter(function (c) { return c.tipo === tipo; });
+      if (deTipo.length > 150) return [];        // «calle» o «avenida» a secas no dicen nada: hay cientos
+      return deTipo.sort(function (a, b) { return a.n.length - b.n.length; })
+        .concat(calles.filter(function (c) { return c.tipo !== tipo && c.pal.indexOf(palabra) >= 0; })).slice(0, 6);
+    }
+    if (!q.length || q.join('').length < 2) return [];
+    var res = [];
+    calles.forEach(function (c) {
+      var usadas = {}, suma = 0;
+      for (var i = 0; i < q.length; i++) {
+        var mejor = 0, cual = -1;
+        for (var k = 0; k < c.pal.length; k++) { if (usadas[k]) continue; var p = parecido(q[i], c.pal[k], i === q.length - 1); if (p > mejor) { mejor = p; cual = k; } }
+        if (!mejor) return;                       // una palabra escrita no aparece en esta calle: descartada
+        usadas[cual] = 1; suma += mejor;
+      }
+      var nota = suma / q.length + .25 * (q.length / c.pal.length) + (tipo && tipo === c.tipo ? .12 : 0) + (c.tipo === 'calle' || c.tipo === 'avenida' || c.tipo === 'plaza' || c.tipo === 'paseo' ? .02 : 0);
+      c.plena = q.length === c.pal.length && suma / q.length >= .75; // lo escrito nombra la calle entera
+      res.push({ c: c, nota: nota });
+    });
+    res.sort(function (a, b) { return b.nota - a.nota || a.c.n.length - b.c.n.length; });
+    return res.slice(0, 6).map(function (r) { return r.c; });
+  }
+  function pintarResultados(lista, vacio) {
+    var ul = $('resultados'); ul.innerHTML = '';
+    if (!lista.length) { if (vacio) { ul.innerHTML = '<li class="msg">' + vacio + '</li>'; ul.hidden = false; } else ul.hidden = true; return; }
+    lista.forEach(function (c) {
+      var li = document.createElement('li'), b = document.createElement('button');
+      b.type = 'button'; b.innerHTML = esc(c.n) + (c.d ? '<span class="sub">' + esc(c.d) + '</span>' : '');
+      b.addEventListener('click', function () { $('q').value = c.n; irA(c.lat, c.lon, c.n, c.d || ''); });
+      li.appendChild(b); ul.appendChild(li);
+    });
+    ul.hidden = false;
+  }
+  // Fuera del callejero (un monumento, un barrio) se pregunta a OpenStreetMap.
+  function buscarFuera(q) {
+    return fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&accept-language=es&bounded=1&viewbox=-4.62,36.80,-4.28,36.62&q=' + encodeURIComponent(q))
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(function (res) {
-        if (!res.length) return aviso('No se ha encontrado en Málaga. Prueba con otro nombre.');
-        // Solo calles, plazas y barrios: fuera comercios, alojamientos y paradas.
-        res = res.filter(function (x) { return ['highway', 'place', 'boundary', 'leisure'].indexOf(x.category) >= 0 && ['bus_stop', 'platform', 'elevator', 'steps'].indexOf(x.type) < 0; });
-        if (!res.length) return aviso('No se ha encontrado esa calle en Málaga. Prueba con otro nombre.');
-        var items = res.map(function (x) {
+        var vistos = {};
+        return res.filter(function (x) { return x.type !== 'bus_stop' && x.type !== 'platform'; }).map(function (x) {
           var partes = String(x.display_name).split(', ');
-          return { lat: Number(x.lat), lon: Number(x.lon), n: x.name || partes[0], d: partes.slice(1, 3).join(', ') };
-        });
-        // Sin repetidos: una calle suele venir partida en varios tramos con el mismo nombre, y a veces también
-        // con su nombre corto («Calle Larios» y «Calle Marqués de Larios»). Se deja un resultado por calle.
-        var GEN = { calle: 1, avenida: 1, avda: 1, plaza: 1, paseo: 1, camino: 1, de: 1, del: 1, la: 1, las: 1, el: 1, los: 1 };
-        var claves = function (t) { return String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(/[^a-z0-9]+/).filter(function (w) { return w && !GEN[w]; }); };
-        var dentro = function (a, b) { return a.length > 0 && a.every(function (w) { return b.indexOf(w) >= 0; }); };
-        items = items.filter(function (it, n) {
-          var ka = claves(it.n);
-          return !items.slice(0, n).some(function (o) {
-            var kb = claves(o.n), m = Math.hypot((o.lat - it.lat) * 111320, (o.lon - it.lon) * 89200);
-            return (ka.join(' ') === kb.join(' ') && m < 1500) || ((dentro(ka, kb) || dentro(kb, ka)) && m < 400);
-          });
-        }).slice(0, 5);
-        if (items.length === 1) return irA(items[0].lat, items[0].lon, items[0].n, items[0].d);
-        ul.innerHTML = ''; ul.hidden = false;
-        items.forEach(function (it) {
-          var li = document.createElement('li'), b = document.createElement('button');
-          b.type = 'button'; b.innerHTML = esc(it.n) + '<span class="sub">' + esc(it.d) + '</span>';
-          b.addEventListener('click', function () { irA(it.lat, it.lon, it.n, it.d); });
-          li.appendChild(b); ul.appendChild(li);
-        });
-      })
-      .catch(function () { aviso('El buscador no está disponible ahora.'); });
-  });
-  $('q').addEventListener('input', function () { if (!this.value) $('resultados').hidden = true; });
+          return { n: x.name || partes[0], d: partes.slice(1, 3).join(', '), lat: Number(x.lat), lon: Number(x.lon) };
+        }).filter(function (it) { var k = plano(it.n); if (vistos[k]) return false; vistos[k] = 1; return true; }).slice(0, 5);
+      });
+  }
+  var espera = null;
+  function sugerir(alEnviar) {
+    var q = $('q').value.trim();
+    if (q.length < 2) { $('resultados').hidden = true; return; }
+    pedirCalles().then(function () {
+      if ($('q').value.trim() !== q) return;      // ya se ha escrito otra cosa
+      var lista = buscarCalles(q);
+      if (!alEnviar) return pintarResultados(lista, q.length >= 4 ? 'Ninguna calle con ese nombre. Pulsa Intro para buscar lugares.' : '');
+      // Intro: si lo escrito es una calle concreta, se va directo; si no, se añaden lugares (monumentos, barrios…).
+      if (lista.length && lista[0].plena) { $('q').value = lista[0].n; return irA(lista[0].lat, lista[0].lon, lista[0].n, ''); }
+      pintarResultados(lista, 'Buscando…');
+      return buscarFuera(q).then(function (l) {
+        var ya = {}; lista.forEach(function (c) { ya[plano(c.n)] = 1; });
+        pintarResultados(lista.slice(0, 4).concat(l.filter(function (x) { return !ya[plano(x.n)]; })).slice(0, 7), 'No se ha encontrado en Málaga. Prueba con otro nombre.');
+      }, function () { pintarResultados(lista, 'No se ha encontrado en Málaga. Prueba con otro nombre.'); });
+    }).catch(function () { pintarResultados([], 'El buscador no está disponible ahora.'); });
+  }
+  $('buscar').addEventListener('submit', function (e) { e.preventDefault(); clearTimeout(espera); sugerir(true); });
+  $('q').addEventListener('input', function () { clearTimeout(espera); espera = setTimeout(sugerir, 140); });
+  $('q').addEventListener('focus', function () { pedirCalles().catch(function () {}); });
 
   // ---------- Reloj ----------
   var fHora = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Madrid' });
