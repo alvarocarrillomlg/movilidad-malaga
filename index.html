@@ -187,6 +187,12 @@ h1 em { font-style: normal; color: var(--accent); }
 .pop .gm::before { content: ""; width: 8px; height: 8px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--accent); }
 .pop img { display: block; width: 260px; max-width: 100%; margin-top: 9px; border-radius: 8px; background: var(--panel-2); aspect-ratio: 4 / 3; object-fit: cover; }
 .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+#pasos { margin-top: 8px; max-height: 232px; overflow-y: auto; }
+.paso { display: grid; grid-template-columns: 38px 1fr auto; gap: 8px; align-items: center; padding: 4px 0; border-top: 1px solid var(--line); }
+.paso:first-child { border-top: 0; }
+.paso .chip { justify-self: start; min-width: 30px; }
+.paso .dest { min-width: 0; font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.paso .cuando b { font-size: 14px; }
 .chip { border: 0; border-radius: 5px; padding: 3px 6px; background: var(--c); color: var(--t, #fff); font: 700 11.5px/1.1 var(--font); cursor: pointer; }
 .pill { display: inline-block; border-radius: 6px; padding: 2px 7px; background: var(--c); color: var(--t, #fff); font-weight: 700; }
 
@@ -324,8 +330,13 @@ h1 em { font-style: normal; color: var(--accent); }
   cargarEstilo().then(function (estilo) {
     map = new maplibregl.Map({ container: 'map', style: estilo, center: VISTA.center, zoom: es3D ? VISTA.zoom : 14, pitch: es3D ? VISTA.pitch : 0,
       bearing: es3D ? VISTA.bearing : 0, minZoom: 10.5, maxZoom: es3D ? 19 : 17, maxPitch: 70,
-      maxBounds: [[-4.85, 36.50], [-4.05, 36.95]], attributionControl: false });
+      maxBounds: [[-4.85, 36.50], [-4.05, 36.95]], attributionControl: false,
+      locale: { 'GeolocateControl.FindMyLocation': 'Mi ubicación', 'GeolocateControl.LocationNotAvailable': 'Ubicación no disponible',
+        'NavigationControl.ZoomIn': 'Acercar', 'NavigationControl.ZoomOut': 'Alejar', 'NavigationControl.ResetBearing': 'Orientar al norte' } });
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
+    // «Mi ubicación»: centra el mapa donde está el usuario y deja un punto azul que le sigue.
+    map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true,
+      fitBoundsOptions: { maxZoom: 16.5 } }), 'bottom-right');
     if (es3D) map.addControl({ // alterna entre la vista inclinada y la vista desde arriba
       onAdd: function () {
         var d = document.createElement('div'); d.className = 'maplibregl-ctrl maplibregl-ctrl-group';
@@ -344,7 +355,7 @@ h1 em { font-style: normal; color: var(--accent); }
       map.on('mouseenter', c, function () { map.getCanvas().style.cursor = 'pointer'; });
       map.on('mouseleave', c, function () { map.getCanvas().style.cursor = ''; });
     });
-    map.on('click', 'stops', function (e) { var s = stops[e.features[0].properties.id]; if (s) abrir([s.lon, s.lat], popParada(s)); });
+    map.on('click', 'stops', function (e) { var s = stops[e.features[0].properties.id]; if (s) abrirParada(s); });
     map.on('click', 'cams', function (e) { var c = cams[e.features[0].properties.i]; if (c) abrirCam(c); });
     arrancar();
   });
@@ -412,9 +423,47 @@ h1 em { font-style: normal; color: var(--accent); }
     $('nStops').textContent = fmt.format(d.stops.length);
     pintarCapas();
   }
-  function popParada(s) {
-    return '<div class="pop"><h3>' + esc(s.n) + '</h3><div class="sub">Parada ' + s.id + (s.d ? ' · ' + esc(s.d) : '') + '</div>' +
-      '<div class="chips">' + s.lines.map(function (l) { return '<button class="chip" type="button" style="' + estiloLinea(l) + '" data-line="' + l.c + '" title="' + esc(l.n) + '">' + esc(l.u) + '</button>'; }).join('') + '</div>' + comoLlegar(s.lat, s.lon) + '</div>';
+  // Horarios programados del día (se piden la primera vez que se abre una parada y se renuevan cada media hora).
+  var horarios = null, horariosEn = 0, horariosPend = null;
+  function pedirHorarios() {
+    if (horarios && Date.now() - horariosEn < 30 * 60000) return Promise.resolve(horarios);
+    if (!horariosPend) horariosPend = get('horarios').then(function (d) { horarios = d; horariosEn = Date.now(); horariosPend = null; return d; },
+      function (e) { horariosPend = null; throw e; });
+    return horariosPend;
+  }
+  var hCorta = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Madrid' });
+  // Próximo paso previsto de cada línea por la parada, ordenado por cercanía.
+  function pasosDe(s, d) {
+    var ahora = (Date.now() - d.d0) / 60000, filas = [], vistas = {};
+    (d.paradas[s.id] || []).forEach(function (g) {
+      var l = lines[g[0]]; if (!l) return;
+      var prox = null;
+      for (var i = 0; i < g[2].length; i++) if (g[2][i] >= ahora - .5) { prox = g[2][i]; break; }
+      vistas[l.c] = 1;
+      filas.push({ l: l, dest: d.destinos[g[1]], min: prox == null ? null : Math.max(0, Math.round(prox - ahora)), hora: prox == null ? '' : hCorta.format(new Date(d.d0 + prox * 60000)) });
+    });
+    s.lines.forEach(function (l) { if (!vistas[l.c]) filas.push({ l: l, dest: '', min: null, hora: '' }); });
+    filas.sort(function (a, b) { return (a.min == null ? 1e9 : a.min) - (b.min == null ? 1e9 : b.min); });
+    return filas.map(function (f) {
+      var cuando = f.min == null ? '<span class="sub">sin más pasos hoy</span>' : f.min === 0 ? '<b>ahora</b>' : f.min <= 90 ? '<b>' + f.min + ' min</b>' : '<b>' + f.hora + '</b>';
+      return '<div class="paso"><button class="chip" type="button" style="' + estiloLinea(f.l) + '" data-line="' + f.l.c + '" title="' + esc(f.l.n) + '">' + esc(f.l.u) + '</button>' +
+        '<span class="dest">' + (f.dest ? 'hacia ' + esc(f.dest) : esc(f.l.n)) + '</span><span class="num cuando"' + (f.hora && f.min <= 90 ? ' title="A las ' + f.hora + '"' : '') + '>' + cuando + '</span></div>';
+    }).join('');
+  }
+  function abrirParada(s) {
+    abrir([s.lon, s.lat], '<div class="pop"><h3>' + esc(s.n) + '</h3><div class="sub">Parada ' + s.id + (s.d ? ' · ' + esc(s.d) : '') + '</div>' +
+      '<div id="pasos"><div class="chips">' + s.lines.map(function (l) { return '<button class="chip" type="button" style="' + estiloLinea(l) + '" data-line="' + l.c + '" title="' + esc(l.n) + '">' + esc(l.u) + '</button>'; }).join('') + '</div>' +
+      '<p class="sub">Cargando los próximos pasos…</p></div>' + comoLlegar(s.lat, s.lon) + '<div class="note" id="pasosNota" hidden>Tiempos según el horario programado de la EMT, no en tiempo real.</div></div>', 310);
+    var caja = $('pasos');
+    var pintar = function () {
+      pedirHorarios().then(function (d) {
+        if (!document.body.contains(caja)) return clearInterval(camTimer);
+        if (!live || d.parcial) { caja.lastChild.textContent = 'Los horarios de hoy no están disponibles.'; return; }
+        caja.innerHTML = pasosDe(s, d); $('pasosNota').hidden = false;
+      }).catch(function () { if (document.body.contains(caja)) caja.lastChild.textContent = 'No se han podido cargar los horarios.'; });
+    };
+    pintar();
+    camTimer = setInterval(pintar, 20000); // el «faltan X min» se va actualizando con la parada abierta
   }
 
   // ---------- Capas dibujadas en el mapa: recorrido, paradas y cámaras ----------

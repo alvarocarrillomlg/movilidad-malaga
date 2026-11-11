@@ -48,6 +48,7 @@ async function main() {
   if (process.argv.includes('--snapshot')) {
     fs.mkdirSync(path.join(ROOT, 'data'), { recursive: true });
     for (const nombre of Object.keys(DATOS)) {
+      if (nombre === 'horarios') continue; // solo valen para el día en curso: no se guardan en la copia
       fs.writeFileSync(path.join(ROOT, 'data', `${nombre}.json`), await datos(nombre));
       console.log(`data/${nombre}.json`);
     }
