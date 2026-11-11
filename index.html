@@ -689,11 +689,11 @@ h1 em { font-style: normal; color: var(--accent); }
   // Minimizar el panel para moverse por el mapa sin nada delante.
   function minimizar(si) {
     $('app').classList.toggle('mini', si); margen();
-    try { localStorage.setItem('mini', si ? '1' : ''); } catch (e) {}
   }
   $('mini').addEventListener('click', function () { minimizar(true); });
   $('abrir').addEventListener('click', function () { minimizar(false); });
-  try { if (localStorage.getItem('mini')) $('app').classList.add('mini'); } catch (e) {}
+  // No se recuerda entre visitas: al abrir la web el panel siempre está a la vista.
+  try { localStorage.removeItem('mini'); } catch (e) {}
 
   // ---------- Carga y refresco ----------
   function get(name) { return fetch('data/' + name + '.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }); }
