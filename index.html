@@ -130,7 +130,6 @@ h1 em { font-style: normal; color: var(--accent); }
   transition: opacity .3s;
 }
 .bus-ic.dim { display: none; }
-.bus-ic.still .bus { border-style: dashed; }
 .park {
   display: flex; align-items: center; gap: 4px; height: 24px; padding: 0 7px 0 3px; border-radius: 7px;
   background: var(--c); color: var(--on-color); border: 1.5px solid var(--panel); box-shadow: 0 1px 5px rgba(0, 0, 0, .35);
@@ -248,13 +247,13 @@ h1 em { font-style: normal; color: var(--accent); }
     </div>
 
     <div id="foot" class="extra">
-      La EMT publica la posición de sus autobuses cada 5 minutos; entre lecturas, el mapa la estima sobre el recorrido de la línea.
+      Cada autobús aparece en la última posición que ha publicado la EMT, que la actualiza cada 5 minutos.
       Datos: <a href="https://datosabiertos.malaga.eu" target="_blank" rel="noopener">Ayuntamiento de Málaga</a> (CC BY 4.0).
     </div>
-    <div id="autorPanel">Elaborado por <b>Álvaro Carrillo Muñoz</b></div>
+    <div id="autorPanel">Elaborado por <b>Álvaro Carrillo</b></div>
   </section>
 
-  <div id="autor">Elaborado por <b>Álvaro Carrillo Muñoz</b></div>
+  <div id="autor">Elaborado por <b>Álvaro Carrillo</b></div>
 </div>
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
@@ -350,38 +349,6 @@ h1 em { font-style: normal; color: var(--accent); }
   try { var saved = JSON.parse(localStorage.getItem('capas') || '{}'); for (var k in shown) if (typeof saved[k] === 'boolean') shown[k] = saved[k]; } catch (e) {}
 
   // ---------- Geometría ----------
-  var R = 6371000, RAD = Math.PI / 180;
-  function dist(a, b) { // metros; suficiente a escala de ciudad
-    var x = (b[1] - a[1]) * RAD * Math.cos((a[0] + b[0]) / 2 * RAD), y = (b[0] - a[0]) * RAD;
-    return Math.sqrt(x * x + y * y) * R;
-  }
-  function makeRoute(pts) {
-    var cum = [0];
-    for (var i = 1; i < pts.length; i++) cum.push(cum[i - 1] + dist(pts[i - 1], pts[i]));
-    return { pts: pts, cum: cum, len: cum[cum.length - 1] || 0 };
-  }
-  // Proyecta un punto sobre el recorrido (opcionalmente solo entre dos distancias): devuelve la
-  // distancia recorrida desde la cabecera y la separación del recorrido, ambas en metros.
-  function project(route, p, desde, hasta) {
-    var best = null, k = Math.cos(p[0] * RAD);
-    for (var i = 1; i < route.pts.length; i++) {
-      if (desde != null && route.cum[i] < desde) continue;
-      if (hasta != null && route.cum[i - 1] > hasta) break;
-      var a = route.pts[i - 1], b = route.pts[i];
-      var ax = (a[1] - p[1]) * k, ay = a[0] - p[0], dx = (b[1] - a[1]) * k, dy = b[0] - a[0], l2 = dx * dx + dy * dy;
-      var t = l2 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / l2)) : 0;
-      var cx = ax + t * dx, cy = ay + t * dy, off = Math.sqrt(cx * cx + cy * cy) * RAD * R;
-      if (!best || off < best.off - .5) best = { s: route.cum[i - 1] + t * (route.cum[i] - route.cum[i - 1]), off: off };
-    }
-    return best;
-  }
-  function pointAt(route, s) {
-    s = Math.max(0, Math.min(route.len, s));
-    var lo = 1, hi = route.cum.length - 1;
-    while (lo < hi) { var mid = (lo + hi) >> 1; if (route.cum[mid] < s) lo = mid + 1; else hi = mid; }
-    var seg = route.cum[lo] - route.cum[lo - 1], t = seg ? (s - route.cum[lo - 1]) / seg : 0, a = route.pts[lo - 1], b = route.pts[lo];
-    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
-  }
   function descomprimir(g) { // enteros en diferencias -> [lat, lon]
     var pts = [], la = 0, lo = 0;
     for (var i = 0; i < g.length; i += 2) { la += g[i]; lo += g[i + 1]; pts.push([la / 1e5, lo / 1e5]); }
@@ -401,19 +368,14 @@ h1 em { font-style: normal; color: var(--accent); }
     d.stops.forEach(function (s) { s.lines = []; stops[s.id] = s; });
     d.lines.forEach(function (l, i) {
       l.color = l.col || colorDe(i); l.texto = l.col ? textoSobre(l.col) : '#fff';
-      l.routes = {}; l.stopS = {};
+      l.routes = {};
       ['1', '2'].forEach(function (dir) {
         var ids = (l.r[dir] || []).filter(function (id) { return stops[id]; });
         ids.forEach(function (id) { if (stops[id].lines.indexOf(l) < 0) stops[id].lines.push(l); });
         // Recorrido real por las calles si la EMT lo publica; si no, las paradas unidas en línea recta.
         var pts = l.g && l.g[dir] ? descomprimir(l.g[dir]) : ids.map(function (id) { return [stops[id].lat, stops[id].lon]; });
         if (pts.length < 2) return;
-        var route = l.routes[dir] = makeRoute(pts); route.real = !!(l.g && l.g[dir]);
-        var prev = 0, sm = l.stopS[dir] = {};
-        ids.forEach(function (id) { // distancia de cada parada a lo largo del recorrido, en orden
-          var pr = project(route, [stops[id].lat, stops[id].lon], prev, prev + 2500) || project(route, [stops[id].lat, stops[id].lon]);
-          if (pr) { sm[id] = pr.s; prev = pr.s; }
-        });
+        l.routes[dir] = { pts: pts, real: !!(l.g && l.g[dir]) };
       });
       lines[l.c] = l;
       var chip = document.createElement('button'); chip.type = 'button'; chip.className = 'lchip'; chip.dataset.line = l.c;
@@ -502,45 +464,24 @@ h1 em { font-style: normal; color: var(--accent); }
 
   // ---------- Autobuses ----------
   var buses = {}, busUpd = 0, busFetched = 0, live = false;
-  var V_DEF = 3.4;      // m/s ≈ 12 km/h, velocidad comercial media: ya incluye paradas y semáforos
-  var V_MAX = 11;       // m/s ≈ 40 km/h
-  var MAX_AHEAD = 330;  // s: la fuente publica cada 5 min; más allá no se proyecta sin un dato nuevo
-
-  function situar(line, x) { // posición del autobús sobre el recorrido de su línea y sentido
-    var route = line && line.routes[String(x.s)];
-    if (!route) return null;
-    var p = [x.lat, x.lon], sp = line.stopS[String(x.s)][x.p], pr = null;
-    if (sp != null) pr = project(route, p, sp - 200, sp + 2500); // cerca de su última parada registrada
-    if (!pr || pr.off > 80) { var g = project(route, p); if (g && (!pr || g.off < pr.off - 30)) pr = g; }
-    return pr && pr.off < 150 ? { route: route, s: pr.s } : null;
-  }
 
   function loadBuses(d) {
     busFetched = d.t;
     live = Date.now() - d.t < 5 * 60000;
-    var isNew = d.upd !== busUpd, seen = {};
+    var seen = {};
     d.buses.forEach(function (x) {
       seen[x.id] = 1;
       var line = lines[x.c], b = buses[x.id];
       if (!b) {
-        b = buses[x.id] = { id: x.id, v: V_DEF, medida: false };
+        b = buses[x.id] = { id: x.id };
         b.marker = marcador('bus-ic', '<div class="bus"></div>', [x.lon, x.lat], function () {
           if (!selected || selected.c !== b.c) selectLine(b.c, false); // pulsar un autobús deja solo su línea
           abrir(b.marker.getLngLat(), busPopup(b));
         });
         b.el = b.marker.getElement();
       }
-      var pos = situar(line, x), mismo = b.upd && b.c === x.c && b.s === x.s;
-      if (isNew && mismo && pos && b.route) {
-        // Velocidad observada entre las dos últimas lecturas reales, suavizada con la anterior.
-        var dt = (d.upd - b.upd) / 1000, adv = pos.s - b.s0;
-        if (dt > 10) {
-          var vObs = adv / dt;
-          if (vObs < .35) { b.v = 0; b.medida = true; }  // parado en cabecera, regulando o en un atasco
-          else if (vObs <= V_MAX * 1.3) { b.v = Math.min(V_MAX, .6 * vObs + .4 * (b.v || V_DEF)); b.medida = true; }
-        }
-      } else if (!mismo) { b.v = V_DEF; b.medida = false; }
-      if (isNew || !b.upd) { b.upd = d.upd; b.lat = x.lat; b.lon = x.lon; b.s0 = pos ? pos.s : 0; b.route = pos ? pos.route : null; }
+      // Solo posiciones reales: el marcador se mueve cuando la EMT publica una lectura nueva.
+      b.marker.setLngLat([x.lon, x.lat]);
       b.c = x.c; b.s = x.s; b.p = x.p;
       var u = line ? line.u : String(x.c);
       if (b.label !== u) {
@@ -554,31 +495,12 @@ h1 em { font-style: normal; color: var(--accent); }
     busUpd = d.upd;
     $('nBuses').textContent = fmt.format(d.buses.length);
     infoLinea();
-    tick();
-  }
-
-  function tick() {
-    var now = Date.now();
-    for (var id in buses) {
-      var b = buses[id], ll = [b.lat, b.lon];
-      b.est = false;
-      if (live && b.route) { // siempre sobre la calle: el punto del recorrido donde debería ir ahora
-        var age = Math.max(0, Math.min(MAX_AHEAD, (now - b.upd) / 1000));
-        ll = pointAt(b.route, b.s0 + b.v * age); b.est = b.v > 0 && age > 5;
-      }
-      b.marker.setLngLat([ll[1], ll[0]]);
-      b.el.classList.toggle('still', live && b.v === 0);
-    }
     renderStatus();
   }
+
   function busPopup(b) {
     var l = lines[b.c], dest = l ? (b.s === 1 ? l.vuelta : l.ida) : '', st = stops[b.p];
-    var age = Math.round((Date.now() - b.upd) / 1000);
-    var note = !live ? 'Posición de la última lectura guardada.'
-      : !b.route ? 'Fuera del recorrido habitual: se muestra su última posición real, de ' + ago(age) + '.'
-      : b.v === 0 ? 'Parado desde la lectura anterior. Último dato real ' + ago(age) + '.'
-      : b.est ? 'Posición estimada a ' + Math.round(b.v * 3.6) + ' km/h, ' + (b.medida ? 'su velocidad entre las dos últimas lecturas' : 'la media de la red') + '. Último dato real ' + ago(age) + '.'
-      : 'Posición real, ' + ago(age) + '.';
+    var note = live ? 'Posición real publicada por la EMT ' + ago(Math.round((Date.now() - busUpd) / 1000)) + '.' : 'Posición de la última lectura guardada.';
     return '<div class="pop"><h3><span class="pill" style="' + (l ? estiloLinea(l) : '--c:' + css('--muted')) + '">' + esc(l ? l.u : b.c) + '</span> ' + (dest ? 'hacia ' + esc(dest) : 'Autobús') + '</h3>' +
       '<div class="sub">' + (l ? esc(l.n) : '') + '</div>' +
       '<p>Autobús n.º ' + esc(b.id) + (st ? '<br>Última parada registrada: ' + esc(st.n) : '') + '</p>' +
@@ -689,7 +611,7 @@ h1 em { font-style: normal; color: var(--accent); }
   function arrancar() {
     get('lineas').then(loadLines).catch(function () {}).then(function () {
       every('buses', loadBuses, 20);
-      setInterval(tick, 1000);
+      setInterval(renderStatus, 1000);
     });
     every('aparcamientos', loadPark, 60);
     every('cortes', loadCortes, 600);
