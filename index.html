@@ -421,11 +421,11 @@ h1 em { font-style: normal; color: var(--accent); }
 
   // ---------- Capas dibujadas en el mapa: recorrido, paradas y cámaras ----------
   var cams = [];
-  // Iconos del mapa: señal de parada de bus y símbolo de cámara (otro color para las webcams enlazadas).
+  // Iconos del mapa: señal de parada de bus y símbolo de cámara.
   var SVG_BUS = "<svg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'><rect x='1' y='1' width='22' height='22' rx='5' fill='#1766c2' stroke='#fff' stroke-width='1.5'/><path fill='#fff' d='M7 6.5h10A1.5 1.5 0 0 1 18.5 8v7.5a1 1 0 0 1-1 1H17v1a1 1 0 0 1-2 0v-1H9v1a1 1 0 0 1-2 0v-1h-.5a1 1 0 0 1-1-1V8A1.5 1.5 0 0 1 7 6.5z'/><rect x='7' y='8' width='10' height='4' rx='.6' fill='#1766c2'/><circle cx='8.6' cy='14.2' r='1' fill='#1766c2'/><circle cx='15.4' cy='14.2' r='1' fill='#1766c2'/></svg>";
   var SVG_CAM = "<svg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='12' r='11' fill='COLOR' stroke='#fff' stroke-width='1.5'/><rect x='5.5' y='8.5' width='9' height='7' rx='1.5' fill='#fff'/><path fill='#fff' d='M15.2 11l3.6-2.2v6.4L15.2 13z'/></svg>";
   var iconos = {};
-  [['parada', SVG_BUS], ['camara', SVG_CAM.replace('COLOR', '#33475b')], ['webcam', SVG_CAM.replace('COLOR', '#0b6f6a')]].forEach(function (par) {
+  [['parada', SVG_BUS], ['camara', SVG_CAM.replace('COLOR', '#33475b')]].forEach(function (par) {
     var img = new Image(52, 52);
     img.onload = function () { iconos[par[0]] = img; pintarCapas(); };
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(par[1].replace('<svg ', '<svg width="52" height="52" '));
@@ -451,7 +451,7 @@ h1 em { font-style: normal; color: var(--accent); }
       map.addLayer({ id: 'route-casing', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 8, 'line-opacity': .9 } });
       map.addLayer({ id: 'route', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 5 } });
       var tam = ['interpolate', ['linear'], ['zoom'], 11, .5, 14, .72, 17, 1];
-      map.addLayer({ id: 'cams', type: 'symbol', source: 'cams', layout: { 'icon-image': ['match', ['get', 'f'], 'web', 'webcam', 'camara'], 'icon-size': tam, 'icon-allow-overlap': true, 'icon-ignore-placement': true } });
+      map.addLayer({ id: 'cams', type: 'symbol', source: 'cams', layout: { 'icon-image': 'camara', 'icon-size': tam, 'icon-allow-overlap': true, 'icon-ignore-placement': true } });
       map.addLayer({ id: 'stops', type: 'symbol', source: 'stops', layout: { 'icon-image': 'parada', 'icon-size': ['interpolate', ['linear'], ['zoom'], 11, .4, 15, .55, 17.5, .9], 'icon-allow-overlap': true, 'icon-ignore-placement': true } });
     }
     map.setPaintProperty('route-casing', 'line-color', css('--panel'));
@@ -602,8 +602,7 @@ h1 em { font-style: normal; color: var(--accent); }
     var titular = c.f === 'dgt' ? 'Cámara de la DGT' : c.n;
     abrir([c.lon, c.lat], '<div class="pop"><h3>' + esc(c.d || c.n) + '</h3><div class="sub">' + esc(titular) + '</div>' +
       (c.img ? '<img id="camImg" alt="Imagen de la cámara"><div class="sub" id="camHora"></div>' : '') +
-      (c.f === 'web' ? '<p><a href="' + esc(c.url) + '" target="_blank" rel="noopener">Ver la webcam en directo</a></p><div class="sub">Se abre en meteo365.es. Ubicación aproximada.</div>'
-        : c.url ? '<p><a href="' + esc(c.url) + '" target="_blank" rel="noopener">Abrir la cámara en movilidad.malaga.eu</a></p>' : '') +
+      (c.url ? '<p><a href="' + esc(c.url) + '" target="_blank" rel="noopener">Abrir la cámara en movilidad.malaga.eu</a></p>' : '') +
       comoLlegar(c.lat, c.lon) + '</div>', 300);
     var img = $('camImg');
     if (!img) return;
