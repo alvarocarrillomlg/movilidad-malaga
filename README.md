@@ -25,7 +25,7 @@ La lectura de las fuentes está en `lib/fuentes.js`, que comparten el servidor l
 - [Datos abiertos del Ayuntamiento de Málaga](https://datosabiertos.malaga.eu) (CC BY 4.0)
 - [DGT](https://nap.dgt.es): cámaras de carretera e incidencias de tráfico (DATEX II)
 - Buscador de calles: callejero municipal (`calles.json`, generado con `herramientas/generar-calles.js`); para lugares que no son calles, [Nominatim](https://nominatim.openstreetmap.org) (OpenStreetMap)
-- Mapa base: [OpenFreeMap](https://openfreemap.org) © OpenMapTiles, datos de [OpenStreetMap](https://www.openstreetmap.org/copyright). Si no está disponible, la página usa el mapa plano guardado en `tiles/`.
+- Mapa base: [OpenFreeMap](https://openfreemap.org) © OpenMapTiles, datos de [OpenStreetMap](https://www.openstreetmap.org/copyright). Si no está disponible, la página usa el mapa plano guardado en `tiles/`, que es ese mismo mapa dibujado de antemano sin puntos de interés.
 
 ## Autoría
 

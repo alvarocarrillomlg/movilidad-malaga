@@ -33,15 +33,9 @@ async function datos(nombre) {
   return pendiente;
 }
 
-async function tesela(z, x, y) {
-  const file = path.join(ROOT, 'tiles', z, x, `${y}.png`);
-  if (!fs.existsSync(file)) { // se pide a OpenStreetMap una sola vez y se guarda
-    const res = await fetch(`https://tile.openstreetmap.org/${z}/${x}/${y}.png`, { headers: { 'User-Agent': 'MovilidadMalaga/1.0' } });
-    if (!res.ok) throw new Error(`tesela ${res.status}`);
-    fs.mkdirSync(path.dirname(file), { recursive: true });
-    fs.writeFileSync(file, Buffer.from(await res.arrayBuffer()));
-  }
-  return fs.readFileSync(file);
+// Mapa plano de reserva: solo las teselas guardadas en tiles/ (la página amplía la más cercana si falta nivel).
+function tesela(z, x, y) {
+  return fs.readFileSync(path.join(ROOT, 'tiles', z, x, `${y}.png`));
 }
 
 async function main() {
@@ -62,7 +56,7 @@ async function main() {
       if (ruta === '/' || ruta === '/index.html') enviar(200, 'text/html; charset=utf-8', pagina(fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8')));
       else if (ruta === '/calles.json') enviar(200, 'application/json; charset=utf-8', fs.readFileSync(path.join(ROOT, 'calles.json')), 'max-age=86400');
       else if ((m = ruta.match(/^\/data\/(\w+)\.json$/)) && DATOS[m[1]]) enviar(200, 'application/json; charset=utf-8', await datos(m[1]));
-      else if ((m = ruta.match(/^\/tiles\/(\d{1,2})\/(\d+)\/(\d+)\.png$/))) enviar(200, 'image/png', await tesela(m[1], m[2], m[3]), 'max-age=604800');
+      else if ((m = ruta.match(/^\/tiles\/(\d{1,2})\/(\d+)\/(\d+)\.png$/)) && fs.existsSync(path.join(ROOT, 'tiles', m[1], m[2], `${m[3]}.png`))) enviar(200, 'image/png', tesela(m[1], m[2], m[3]), 'max-age=604800');
       else enviar(404, 'text/plain; charset=utf-8', 'No encontrado');
     } catch (e) {
       console.warn(`${ruta}: ${e.message}`);

@@ -334,9 +334,9 @@ h1 em { font-style: normal; color: var(--accent); }
   function estiloPlano() {
     var base = new URL('tiles/', location.href).href;
     return { version: 8, sources: { base: { type: 'raster', tiles: [base + '{z}/{x}/{y}.png'], tileSize: 256, minzoom: 11, maxzoom: 15,
-      attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' } },
+      attribution: 'OpenFreeMap © OpenMapTiles, datos de OpenStreetMap' } },
       layers: [{ id: 'fondo', type: 'background', paint: { 'background-color': css('--bg') } },
-        { id: 'base', type: 'raster', source: 'base', paint: { 'raster-saturation': -.5, 'raster-contrast': -.05 } }] };
+        { id: 'base', type: 'raster', source: 'base' }] };
   }
   function cargarEstilo() {
     return fetch(VECTOR, { signal: AbortSignal.timeout ? AbortSignal.timeout(7000) : undefined })
@@ -625,7 +625,8 @@ h1 em { font-style: normal; color: var(--accent); }
     for (var ic in iconos) if (!map.hasImage(ic)) map.addImage(ic, iconos[ic], { pixelRatio: 2 });
     // Capa invisible con el eje de las calles del mapa base: sirve para saber qué calle se ha pulsado.
     if (map.getSource('openmaptiles') && !map.getLayer('calles-toque')) map.addLayer({ id: 'calles-toque', type: 'line', source: 'openmaptiles', 'source-layer': 'transportation_name',
-      minzoom: 12, paint: { 'line-width': 16, 'line-opacity': 0 } });
+      minzoom: 12, filter: ['!', ['match', ['get', 'class'], ['ferry', 'rail', 'transit', 'aerialway'], true, false]], // solo calles: ni rutas de barco ni vías
+      paint: { 'line-width': 16, 'line-opacity': 0 } });
     if (!map.getLayer('route')) {
       map.addLayer({ id: 'route-casing', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 8, 'line-opacity': .9 } });
       map.addLayer({ id: 'route', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 5 } });
