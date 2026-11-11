@@ -82,7 +82,7 @@ h1 em { font-style: normal; color: var(--accent); }
 #lineas { display: grid; gap: 8px; }
 #lineas .cab { display: flex; align-items: baseline; gap: 8px; }
 #lineas .k { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); flex: none; }
-#lineHint { font-size: 12.5px; color: var(--muted); }
+#lineas .k small { font-size: 9.5px; letter-spacing: .05em; }
 #chips { display: flex; flex-wrap: wrap; gap: 5px; }
 .lchip {
   min-width: 34px; height: 26px; padding: 0 7px; border: 2px solid transparent; border-radius: 7px; cursor: pointer;
@@ -212,7 +212,6 @@ h1 em { font-style: normal; color: var(--accent); }
   #autorPanel { text-align: center; margin-top: 0; }
   #chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; margin-right: -14px; padding-right: 14px; scrollbar-width: thin; }
   .lchip { flex: none; height: 32px; min-width: 38px; }
-  #lineHint { display: none; }
   #reloj { padding-top: 8px; }
   #hora { font-size: 20px; }
   .maplibregl-ctrl-bottom-right { top: env(safe-area-inset-top, 0px); bottom: auto; }
@@ -252,7 +251,7 @@ h1 em { font-style: normal; color: var(--accent); }
     </div>
 
     <div id="lineas">
-      <div class="cab"><span class="k">Líneas</span><span id="lineHint">Pulsa una para ver solo su recorrido y sus buses</span></div>
+      <div class="cab"><span class="k">Líneas EMT <small>(pulsa tu línea)</small></span></div>
       <div id="chips" role="group" aria-label="Líneas de bus"></div>
       <div id="lineInfo" hidden>
         <div id="lineText"></div>
@@ -478,7 +477,7 @@ h1 em { font-style: normal; color: var(--accent); }
     pintarCapas();
   }
   function infoLinea() {
-    $('lineInfo').hidden = !selected; $('lineHint').hidden = !!selected;
+    $('lineInfo').hidden = !selected;
     if (!selected) return;
     var n = 0, real = true;
     for (var id in buses) if (buses[id].c === selected.c) n++;
