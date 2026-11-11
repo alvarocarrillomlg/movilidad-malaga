@@ -1,6 +1,6 @@
 # La movilidad de Málaga en directo
 
-Mapa de la movilidad de Málaga: autobuses de la EMT (con estimación de avance entre lecturas), paradas, aparcamientos municipales, cortes de tráfico, cámaras y clima.
+Mapa en 3D de la movilidad de Málaga: autobuses de la EMT (con su color oficial y estimación de avance sobre el recorrido real de cada línea), paradas, aparcamientos municipales, cortes de tráfico, cámaras y clima.
 
 ## Uso
 
@@ -24,4 +24,4 @@ La lectura de las fuentes está en `lib/fuentes.js`, que comparten el servidor l
 
 - [Datos abiertos del Ayuntamiento de Málaga](https://datosabiertos.malaga.eu) (CC BY 4.0)
 - [Open-Meteo](https://open-meteo.com): tiempo, calidad del aire y estado del mar
-- Mapa base © colaboradores de [OpenStreetMap](https://www.openstreetmap.org/copyright)
+- Mapa base: [OpenFreeMap](https://openfreemap.org) © OpenMapTiles, datos de [OpenStreetMap](https://www.openstreetmap.org/copyright). Si no está disponible, la página usa el mapa plano guardado en `tiles/`.
