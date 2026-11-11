@@ -248,10 +248,10 @@ h1 em { font-style: normal; color: var(--accent); }
       <button class="layer" type="button" data-layer="cams" aria-pressed="true">
         <span class="big num" id="nCams"><span class="carga" role="img" aria-label="Cargando"></span></span><span class="sw sw-ico"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#33475b" stroke="#fff" stroke-width="1.5"/><rect x="5.5" y="8.5" width="9" height="7" rx="1.5" fill="#fff"/><path fill="#fff" d="M15.2 11l3.6-2.2v6.4L15.2 13z"/></svg></span><span class="lbl">Cámaras en directo</span>
       </button>
-      <button class="layer wide extra" type="button" data-layer="incid" aria-pressed="false">
+      <button class="layer wide" type="button" data-layer="incid" aria-pressed="true">
         <span class="sw sw-ico"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.6 22.4 20.6H1.6z" fill="#fff" stroke="#d3202b" stroke-width="2.6" stroke-linejoin="round"/><path d="M12 9v5.2" stroke="#13222c" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17.3" r="1.25" fill="#13222c"/></svg></span><span class="lbl"><span class="num" id="nIncid">…</span> incidencias de tráfico (DGT)</span>
       </button>
-      <button class="layer wide extra" type="button" data-layer="stops" aria-pressed="true">
+      <button class="layer wide" type="button" data-layer="stops" aria-pressed="false">
         <span class="sw sw-ico"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="22" height="22" rx="5" fill="#1766c2" stroke="#fff" stroke-width="1.5"/><path fill="#fff" d="M7 6.5h10A1.5 1.5 0 0 1 18.5 8v7.5a1 1 0 0 1-1 1H17v1a1 1 0 0 1-2 0v-1H9v1a1 1 0 0 1-2 0v-1h-.5a1 1 0 0 1-1-1V8A1.5 1.5 0 0 1 7 6.5z"/><rect x="7" y="8" width="10" height="4" rx=".6" fill="#1766c2"/><circle cx="8.6" cy="14.2" r="1" fill="#1766c2"/><circle cx="15.4" cy="14.2" r="1" fill="#1766c2"/></svg></span><span class="lbl"><span class="num" id="nStops">…</span> paradas de bus</span><span class="hint" id="stopHint"></span>
       </button>
     </div>
@@ -369,9 +369,9 @@ h1 em { font-style: normal; color: var(--accent); }
     return new maplibregl.Marker({ element: el }).setLngLat(lngLat).addTo(map);
   }
 
-  // De inicio solo se ven los buses y los aparcamientos; el resto se activa desde el panel.
-  var shown = { buses: true, park: true, cortes: false, cams: false, stops: false, incid: false };
-  try { var saved = JSON.parse(localStorage.getItem('capas2') || '{}'); for (var k in shown) if (typeof saved[k] === 'boolean') shown[k] = saved[k]; } catch (e) {}
+  // De inicio se ven los buses, los aparcamientos y las incidencias de tráfico; el resto se activa desde el panel.
+  var shown = { buses: true, park: true, cortes: false, cams: false, stops: false, incid: true };
+  try { var saved = JSON.parse(localStorage.getItem('capas3') || '{}'); for (var k in shown) if (typeof saved[k] === 'boolean') shown[k] = saved[k]; } catch (e) {}
 
   // ---------- Geometría ----------
   function descomprimir(g) { // enteros en diferencias -> [lat, lon]
@@ -655,7 +655,7 @@ h1 em { font-style: normal; color: var(--accent); }
     var name = btn.dataset.layer; applyLayer(name);
     btn.addEventListener('click', function () {
       shown[name] = !shown[name]; applyLayer(name);
-      try { localStorage.setItem('capas2', JSON.stringify(shown)); } catch (e) {}
+      try { localStorage.setItem('capas3', JSON.stringify(shown)); } catch (e) {}
     });
   });
   $('lineClear').addEventListener('click', function () { selectLine(null); });
@@ -700,7 +700,7 @@ h1 em { font-style: normal; color: var(--accent); }
     every('aparcamientos', loadPark, 60);
     every('cortes', loadCortes, 600);
     every('camaras', loadCams, 3600);
-    every('incidencias', loadIncid, 120);
+    every('incidencias', loadIncid, 60);
   }
 })();
 </script>
