@@ -101,13 +101,12 @@ h1 em { font-style: normal; color: var(--accent); }
 
 #foot { font-size: 11.5px; color: var(--muted); padding-top: 10px; border-top: 1px solid var(--line); }
 #foot a { color: inherit; }
-#autor, #autorPanel { font-size: 12.5px; color: var(--muted); }
-#autor b, #autorPanel b { color: var(--ink); font-weight: 600; }
+#autorPanel { font-size: 12.5px; color: var(--muted); }
+#autorPanel b { color: var(--ink); font-weight: 600; }
 #autorPanel { margin-top: -4px; }
-#autor, #abrir {
+#abrir {
   position: absolute; z-index: 3; background: var(--panel); border: 1px solid var(--line); border-radius: 99px; box-shadow: var(--shadow); white-space: nowrap;
 }
-#autor { left: 50%; transform: translateX(-50%); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); padding: 6px 13px; }
 #abrir { top: calc(14px + env(safe-area-inset-top, 0px)); left: max(14px, env(safe-area-inset-left, 0px)); width: 348px; border-radius: 12px; }
 /* Franja con flecha para minimizar el panel y volver a desplegarlo. */
 .franja { display: grid; place-items: center; height: 26px; padding: 0; color: var(--on-color); cursor: pointer; }
@@ -116,7 +115,7 @@ h1 em { font-style: normal; color: var(--accent); }
 #mini, #abrir { background: var(--accent); border-color: var(--accent); } /* el mismo verde que «en directo» */
 #mini { flex: none; margin: -2px -18px -12px; width: calc(100% + 36px); border: 0; border-radius: 0 0 13px 13px; position: sticky; bottom: -12px; }
 #abrir svg { transform: rotate(180deg); } /* en ordenador el panel se recoge hacia arriba y se despliega hacia abajo */
-#app:not(.mini) #autor, #app:not(.mini) #abrir, #app.mini #panel { display: none; }
+#app:not(.mini) #abrir, #app.mini #panel { display: none; }
 
 /* Botones del panel: desplegar (móvil) y minimizar */
 #acciones { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; }
@@ -208,7 +207,7 @@ h1 em { font-style: normal; color: var(--accent); }
   #mini { order: -1; position: static; margin: -13px -14px -4px; width: calc(100% + 28px); border-radius: 13px 13px 0 0; height: 24px; }
   #mini svg { transform: rotate(180deg); }
   #acciones { top: 34px; }
-  #abrir { top: auto; bottom: calc(46px + env(safe-area-inset-bottom, 0px)); left: max(10px, env(safe-area-inset-left, 0px)); right: max(10px, env(safe-area-inset-right, 0px)); width: auto; height: 30px; }
+  #abrir { top: auto; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); left: max(46px, env(safe-area-inset-left, 0px)); right: max(10px, env(safe-area-inset-right, 0px)); width: auto; height: 30px; }
   #abrir svg { transform: none; }
   #panel:not(.open) .extra { display: none; }
   #autorPanel { text-align: center; margin-top: 0; }
@@ -275,12 +274,11 @@ h1 em { font-style: normal; color: var(--accent); }
     <div id="foot" class="extra">
       La posición de los buses depende de la EMT, que la publica cada 5 minutos aproximadamente.
     </div>
-    <div id="autorPanel">Elaborado por: <b>Álvaro Carrillo</b></div>
+    <div id="autorPanel" class="extra">Elaborado por: <b>Álvaro Carrillo</b></div>
     <button id="mini" class="franja" type="button" aria-label="Minimizar el panel" title="Minimizar el panel para ver todo el mapa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
   </section>
 
   <button id="abrir" class="franja" type="button" aria-label="Mostrar el panel" title="Mostrar el panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
-  <div id="autor">Elaborado por: <b>Álvaro Carrillo</b></div>
 </div>
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
