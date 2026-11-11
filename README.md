@@ -24,3 +24,7 @@ La lectura de las fuentes está en `lib/fuentes.js`, que comparten el servidor l
 
 - [Datos abiertos del Ayuntamiento de Málaga](https://datosabiertos.malaga.eu) (CC BY 4.0)
 - Mapa base: [OpenFreeMap](https://openfreemap.org) © OpenMapTiles, datos de [OpenStreetMap](https://www.openstreetmap.org/copyright). Si no está disponible, la página usa el mapa plano guardado en `tiles/`.
+
+## Autoría
+
+Elaborado por Álvaro Carrillo Muñoz.
