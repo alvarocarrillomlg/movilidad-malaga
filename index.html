@@ -91,10 +91,9 @@ h1 em { font-style: normal; color: var(--accent); }
 #lineClear { padding: 8px 10px; background: transparent; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; }
 #lineInfo { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
 
-#clima { display: grid; gap: 7px; padding-top: 12px; border-top: 1px solid var(--line); }
-#clima .c { display: grid; grid-template-columns: 52px 1fr; gap: 8px; align-items: baseline; font-size: 13px; }
-#clima .k { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
-#clima b { font-weight: 600; }
+#reloj { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+#reloj .k { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+#hora { font-size: 28px; font-weight: 700; letter-spacing: -.02em; line-height: 1; }
 .tag { display: inline-block; padding: 1px 7px; border-radius: 99px; font-size: 11.5px; font-weight: 600; color: var(--on-color); background: var(--muted); }
 
 #foot { font-size: 11.5px; color: var(--muted); padding-top: 10px; border-top: 1px solid var(--line); }
@@ -166,6 +165,8 @@ h1 em { font-style: normal; color: var(--accent); }
     background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-size: 12.5px;
   }
   #panel:not(.open) .extra { display: none; }
+  #reloj { padding-top: 8px; }
+  #hora { font-size: 20px; }
   .maplibregl-ctrl-bottom-right { top: env(safe-area-inset-top, 0px); bottom: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -208,16 +209,14 @@ h1 em { font-style: normal; color: var(--accent); }
       <div id="lineInfo" hidden></div>
     </div>
 
-    <div id="clima" class="extra">
-      <div class="c"><span class="k">Tiempo</span><span id="cTiempo">–</span></div>
-      <div class="c"><span class="k">Aire</span><span id="cAire">–</span></div>
-      <div class="c"><span class="k">Mar</span><span id="cMar">–</span></div>
+    <div id="reloj">
+      <span class="k">Hora en Málaga</span>
+      <time class="num" id="hora">--:--:--</time>
     </div>
 
     <div id="foot" class="extra">
       La EMT publica la posición de sus autobuses cada 5 minutos; entre lecturas, el mapa la estima sobre el recorrido de la línea.
-      Datos: <a href="https://datosabiertos.malaga.eu" target="_blank" rel="noopener">Ayuntamiento de Málaga</a> (CC BY 4.0) y
-      <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>.
+      Datos: <a href="https://datosabiertos.malaga.eu" target="_blank" rel="noopener">Ayuntamiento de Málaga</a> (CC BY 4.0).
     </div>
   </section>
 </div>
@@ -228,7 +227,6 @@ h1 em { font-style: normal; color: var(--accent); }
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
   var fmt = new Intl.NumberFormat('es-ES', { useGrouping: 'always' });
-  var dec1 = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 });
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var css = function (name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); };
   var ancho = function () { return innerWidth > 720; };
@@ -595,21 +593,14 @@ h1 em { font-style: normal; color: var(--accent); }
       (c.url ? '<p><a href="' + esc(c.url) + '" target="_blank" rel="noopener">Abrir la cámara en movilidad.malaga.eu</a></p>' : '') + '</div>';
   }
 
-  // ---------- Clima ----------
-  var WMO = { 0: 'Despejado', 1: 'Poco nuboso', 2: 'Intervalos nubosos', 3: 'Nublado', 45: 'Niebla', 48: 'Niebla', 51: 'Llovizna débil', 53: 'Llovizna', 55: 'Llovizna intensa',
-    61: 'Lluvia débil', 63: 'Lluvia', 65: 'Lluvia fuerte', 80: 'Chubascos débiles', 81: 'Chubascos', 82: 'Chubascos fuertes', 95: 'Tormenta', 96: 'Tormenta con granizo', 99: 'Tormenta con granizo' };
-  var ROSA = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
-  var rumbo = function (g) { return ROSA[Math.round(g / 45) % 8]; };
-  function loadClima(d) {
-    if (d.w) $('cTiempo').innerHTML = '<b class="num">' + Math.round(d.w.temperature_2m) + ' °C</b> · ' + (WMO[d.w.weather_code] || 'Variable') +
-      ' · viento ' + Math.round(d.w.wind_speed_10m) + ' km/h del ' + rumbo(d.w.wind_direction_10m);
-    if (d.a) {
-      var q = d.a.european_aqi, lv = q <= 20 ? ['Bueno', '--good'] : q <= 40 ? ['Aceptable', '--good'] : q <= 60 ? ['Moderado', '--warn'] : q <= 80 ? ['Malo', '--bad'] : ['Muy malo', '--bad'];
-      $('cAire').innerHTML = '<span class="tag" style="background:var(' + lv[1] + ')">' + lv[0] + '</span> índice europeo <b class="num">' + q + '</b> · NO₂ ' + dec1.format(d.a.nitrogen_dioxide) + ' µg/m³';
-    }
-    if (d.m) $('cMar').innerHTML = 'Olas de <b class="num">' + dec1.format(d.m.wave_height) + ' m</b> del ' + rumbo(d.m.wave_direction) +
-      ' · agua a <b class="num">' + dec1.format(d.m.sea_surface_temperature) + ' °C</b>';
+  // ---------- Reloj ----------
+  var fHora = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Madrid' });
+  function reloj() {
+    var ahora = new Date();
+    $('hora').textContent = fHora.format(ahora);
+    setTimeout(reloj, 1000 - ahora.getMilliseconds()); // cambia justo al empezar cada segundo
   }
+  reloj();
 
   // ---------- Capas e interacción ----------
   function applyLayer(name) {
@@ -652,7 +643,6 @@ h1 em { font-style: normal; color: var(--accent); }
     every('aparcamientos', loadPark, 60);
     every('cortes', loadCortes, 600);
     every('camaras', loadCams, 3600);
-    every('clima', loadClima, 600);
   }
 })();
 </script>
