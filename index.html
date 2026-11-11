@@ -396,6 +396,8 @@ h1 em { font-style: normal; color: var(--accent); }
     map.on('click', 'stops', function (e) { var s = stops[e.features[0].properties.id]; if (s) abrirParada(s); });
     // Pulsar una calle: su nombre y las líneas de bus que pasan por ese punto.
     map.on('click', function (e) {
+      // Solo con «Buses en directo» o «paradas de bus» activados: si no, pulsar el mapa no abre nada.
+      if (!shown.buses && !shown.stops) return;
       if (!map.getLayer('calles-toque') || map.queryRenderedFeatures(e.point, { layers: ['stops', 'cams'] }).length) return;
       // Sobre el mar no hay calles que nombrar, aunque pase cerca una línea de barco.
       if (map.queryRenderedFeatures(e.point).some(function (x) { return x.sourceLayer === 'water' && x.layer.type === 'fill'; })) return;
