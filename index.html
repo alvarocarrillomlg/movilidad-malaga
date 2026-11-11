@@ -54,11 +54,11 @@ button, select { font: inherit; color: inherit; }
   position: absolute; z-index: 5;
   top: calc(14px + env(safe-area-inset-top, 0px)); left: max(14px, env(safe-area-inset-left, 0px));
   width: 348px; max-height: calc(100% - 28px);
-  display: flex; flex-direction: column; gap: 14px;
-  padding: 18px 18px 14px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 11px;
+  padding: 16px 18px 12px; overflow-y: auto;
   background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow);
 }
-h1 { margin: 0; font-size: 21px; line-height: 1.12; font-weight: 700; letter-spacing: -.015em; text-wrap: balance; }
+h1 { margin: 0; padding-right: 64px; font-size: 21px; line-height: 1.12; font-weight: 700; letter-spacing: -.015em; text-wrap: balance; }
 h1 em { font-style: normal; color: var(--accent); }
 #status { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12.5px; min-height: 18px; }
 #dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
@@ -81,8 +81,8 @@ h1 em { font-style: normal; color: var(--accent); }
 .sw-bus { border-radius: 4px; background: var(--accent); }
 .sw-park { border-radius: 3px; background: var(--good); }
 .sw-corte { border-radius: 50%; background: linear-gradient(var(--senal-blanco), var(--senal-blanco)) center / 8px 3px no-repeat var(--senal); width: 14px; height: 14px; }
-.sw-cam { border-radius: 50%; border: 3px solid var(--cam); }
-.sw-stop { border-radius: 50%; border: 2px solid var(--stop); background: var(--stop-fill); width: 10px; height: 10px; }
+.sw-ico { width: 16px; height: 16px; }
+.sw-ico svg { display: block; width: 100%; height: 100%; }
 .layer.wide { grid-column: 1 / -1; grid-template-columns: auto 1fr auto; }
 .layer.wide .lbl { color: var(--ink); }
 .layer.wide .hint { font-size: 12px; color: var(--muted); }
@@ -93,7 +93,7 @@ h1 em { font-style: normal; color: var(--accent); }
 #lineHint { font-size: 12.5px; color: var(--muted); }
 #chips { display: flex; flex-wrap: wrap; gap: 5px; }
 .lchip {
-  min-width: 34px; height: 28px; padding: 0 7px; border: 2px solid transparent; border-radius: 7px; cursor: pointer;
+  min-width: 34px; height: 26px; padding: 0 7px; border: 2px solid transparent; border-radius: 7px; cursor: pointer;
   background: var(--c); color: var(--t, #fff); font: 700 12.5px/1 var(--font); transition: opacity .2s, transform .1s;
 }
 .lchip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0, 0, 0, .25); }
@@ -114,11 +114,28 @@ h1 em { font-style: normal; color: var(--accent); }
 #foot a { color: inherit; }
 #autor, #autorPanel { font-size: 12.5px; color: var(--muted); }
 #autor b, #autorPanel b { color: var(--ink); font-weight: 600; }
-#autor {
-  position: absolute; z-index: 3; left: 50%; transform: translateX(-50%); bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-  padding: 6px 13px; background: var(--panel); border: 1px solid var(--line); border-radius: 99px; box-shadow: var(--shadow); white-space: nowrap;
+#autorPanel { margin-top: -4px; }
+#autor, #abrir {
+  position: absolute; z-index: 3; background: var(--panel); border: 1px solid var(--line); border-radius: 99px; box-shadow: var(--shadow); white-space: nowrap;
 }
-#autorPanel { display: none; }
+#autor { left: 50%; transform: translateX(-50%); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); padding: 6px 13px; }
+#abrir { top: calc(14px + env(safe-area-inset-top, 0px)); left: max(14px, env(safe-area-inset-left, 0px)); padding: 9px 15px; font-weight: 600; cursor: pointer; }
+#app:not(.mini) #autor, #app:not(.mini) #abrir, #app.mini #panel { display: none; }
+
+/* Botones del panel: desplegar (móvil) y minimizar */
+#acciones { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; }
+#acciones button { padding: 5px 10px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-size: 12.5px; }
+
+/* Buscador de calles */
+#buscar { display: flex; gap: 6px; }
+#q { flex: 1; min-width: 0; height: 34px; padding: 0 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 9px; font: inherit; color: inherit; }
+#buscar button { width: 38px; height: 34px; display: grid; place-items: center; background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; cursor: pointer; }
+#buscar svg { width: 16px; height: 16px; }
+#resultados { list-style: none; margin: -6px 0 0; padding: 0; display: grid; gap: 2px; font-size: 13px; }
+#resultados button { width: 100%; text-align: left; padding: 7px 10px; background: var(--panel-2); border: 0; border-radius: 8px; cursor: pointer; }
+#resultados button:hover { outline: 1px solid var(--line); }
+#resultados .sub { display: block; color: var(--muted); font-size: 12px; }
+#resultados .msg { padding: 2px 2px; color: var(--muted); font-size: 12.5px; }
 #more { display: none; }
 
 /* ---------- Marcadores ---------- */
@@ -170,6 +187,8 @@ h1 em { font-style: normal; color: var(--accent); }
 .pop .fig { font-size: 26px; font-weight: 700; letter-spacing: -.02em; line-height: 1; }
 .pop .note { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
 .pop a { color: var(--accent); font-weight: 600; }
+.pop .gm { display: inline-flex; align-items: center; gap: 5px; }
+.pop .gm::before { content: ""; width: 8px; height: 8px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--accent); }
 .pop img { display: block; width: 260px; max-width: 100%; margin-top: 9px; border-radius: 8px; background: var(--panel-2); aspect-ratio: 4 / 3; object-fit: cover; }
 .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
 .chip { border: 0; border-radius: 5px; padding: 3px 6px; background: var(--c); color: var(--t, #fff); font: 700 11.5px/1.1 var(--font); cursor: pointer; }
@@ -181,19 +200,17 @@ h1 em { font-style: normal; color: var(--accent); }
     top: auto; left: max(10px, env(safe-area-inset-left, 0px)); right: max(10px, env(safe-area-inset-right, 0px));
     bottom: calc(10px + env(safe-area-inset-bottom, 0px)); width: auto; max-height: 72%; padding: 13px 14px 12px; gap: 10px;
   }
-  h1 { font-size: 17px; padding-right: 74px; }
+  h1 { font-size: 17px; padding-right: 128px; }
   #layers { grid-template-columns: repeat(4, 1fr); gap: 6px; }
   .layer { padding: 7px 8px; grid-template-columns: 1fr; align-content: start; }
   .layer .sw { display: none; }
   .layer .big { font-size: 17px; }
   .layer .lbl { font-size: 11px; line-height: 1.15; min-width: 0; }
-  #more {
-    display: block; position: absolute; top: 10px; right: 12px; padding: 5px 10px;
-    background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-size: 12.5px;
-  }
+  #more { display: block; }
+  #acciones { top: 10px; right: 10px; }
+  #abrir { top: auto; bottom: calc(46px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); }
   #panel:not(.open) .extra { display: none; }
-  #autor { display: none; }
-  #autorPanel { display: block; text-align: center; }
+  #autorPanel { text-align: center; margin-top: 0; }
   #chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; margin-right: -14px; padding-right: 14px; scrollbar-width: thin; }
   .lchip { flex: none; height: 32px; min-width: 38px; }
   #lineHint { display: none; }
@@ -210,31 +227,40 @@ h1 em { font-style: normal; color: var(--accent); }
   <div id="map" aria-label="Mapa de Málaga"></div>
 
   <section id="panel" aria-label="Resumen y capas">
-    <button id="more" type="button" aria-expanded="false">Más</button>
+    <div id="acciones">
+      <button id="more" type="button" aria-expanded="false">Más</button>
+      <button id="mini" type="button" title="Ocultar el panel para ver todo el mapa">Ocultar</button>
+    </div>
     <h1>La movilidad de Málaga <em>en directo</em></h1>
     <div id="status" role="status"><span id="dot"></span><span id="statusText">Cargando datos…</span></div>
 
+    <form id="buscar" role="search">
+      <input id="q" type="search" placeholder="Buscar calle o lugar…" aria-label="Buscar una calle o un lugar de Málaga" autocomplete="off">
+      <button type="submit" aria-label="Buscar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg></button>
+    </form>
+    <ul id="resultados" hidden></ul>
+
     <div id="layers">
       <button class="layer" type="button" data-layer="buses" aria-pressed="true">
-        <span class="big num" id="nBuses">–</span><span class="sw sw-bus"></span><span class="lbl">Autobuses</span>
+        <span class="big num" id="nBuses">–</span><span class="sw sw-bus"></span><span class="lbl">Buses</span>
       </button>
       <button class="layer" type="button" data-layer="park" aria-pressed="true">
-        <span class="big num" id="nPark">–</span><span class="sw sw-park"></span><span class="lbl">Plazas libres</span>
+        <span class="big num" id="nPark">–</span><span class="sw sw-park"></span><span class="lbl">Plazas parking</span>
       </button>
       <button class="layer" type="button" data-layer="cortes" aria-pressed="true">
         <span class="big num" id="nCortes">–</span><span class="sw sw-corte"></span><span class="lbl">Cortes y obras</span>
       </button>
       <button class="layer" type="button" data-layer="cams" aria-pressed="true">
-        <span class="big num" id="nCams">–</span><span class="sw sw-cam"></span><span class="lbl">Cámaras</span>
+        <span class="big num" id="nCams">–</span><span class="sw sw-ico"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#33475b" stroke="#fff" stroke-width="1.5"/><rect x="5.5" y="8.5" width="9" height="7" rx="1.5" fill="#fff"/><path fill="#fff" d="M15.2 11l3.6-2.2v6.4L15.2 13z"/></svg></span><span class="lbl">Cámaras en directo</span>
       </button>
       <button class="layer wide extra" type="button" data-layer="stops" aria-pressed="true">
-        <span class="sw sw-stop"></span><span class="lbl"><span class="num" id="nStops">–</span> paradas de autobús</span><span class="hint" id="stopHint"></span>
+        <span class="sw sw-ico"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="22" height="22" rx="5" fill="#1766c2" stroke="#fff" stroke-width="1.5"/><path fill="#fff" d="M7 6.5h10A1.5 1.5 0 0 1 18.5 8v7.5a1 1 0 0 1-1 1H17v1a1 1 0 0 1-2 0v-1H9v1a1 1 0 0 1-2 0v-1h-.5a1 1 0 0 1-1-1V8A1.5 1.5 0 0 1 7 6.5z"/><rect x="7" y="8" width="10" height="4" rx=".6" fill="#1766c2"/><circle cx="8.6" cy="14.2" r="1" fill="#1766c2"/><circle cx="15.4" cy="14.2" r="1" fill="#1766c2"/></svg></span><span class="lbl"><span class="num" id="nStops">–</span> paradas de bus</span><span class="hint" id="stopHint"></span>
       </button>
     </div>
 
     <div id="lineas">
-      <div class="cab"><span class="k">Líneas</span><span id="lineHint">Pulsa una para ver solo su recorrido y sus autobuses</span></div>
-      <div id="chips" role="group" aria-label="Líneas de autobús"></div>
+      <div class="cab"><span class="k">Líneas</span><span id="lineHint">Pulsa una para ver solo su recorrido y sus buses</span></div>
+      <div id="chips" role="group" aria-label="Líneas de bus"></div>
       <div id="lineInfo" hidden>
         <div id="lineText"></div>
         <button id="lineClear" type="button">Ver todas las líneas</button>
@@ -247,13 +273,13 @@ h1 em { font-style: normal; color: var(--accent); }
     </div>
 
     <div id="foot" class="extra">
-      Cada autobús aparece en la última posición que ha publicado la EMT, que la actualiza cada 5 minutos.
-      Datos: <a href="https://datosabiertos.malaga.eu" target="_blank" rel="noopener">Ayuntamiento de Málaga</a> (CC BY 4.0).
+      La posición de los buses depende de la EMT, que la publica cada 5 minutos aproximadamente.
     </div>
-    <div id="autorPanel">Elaborado por <b>Álvaro Carrillo</b></div>
+    <div id="autorPanel">Elaborado por: <b>Álvaro Carrillo</b></div>
   </section>
 
-  <div id="autor">Elaborado por <b>Álvaro Carrillo</b></div>
+  <button id="abrir" type="button">Mostrar el panel</button>
+  <div id="autor">Elaborado por: <b>Álvaro Carrillo</b></div>
 </div>
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
@@ -307,7 +333,10 @@ h1 em { font-style: normal; color: var(--accent); }
     map = new maplibregl.Map({ container: 'map', style: estilo, center: VISTA.center, zoom: es3D ? VISTA.zoom : 14, pitch: es3D ? VISTA.pitch : 0,
       bearing: es3D ? VISTA.bearing : 0, minZoom: 10.5, maxZoom: es3D ? 19 : 17, maxPitch: 70,
       maxBounds: [[-4.85, 36.50], [-4.05, 36.95]], attributionControl: false });
-    map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
+    map.addControl(new maplibregl.AttributionControl({ compact: true,
+      customAttribution: 'Datos: <a href="https://datosabiertos.malaga.eu" target="_blank" rel="noopener">Ayuntamiento de Málaga</a> (CC BY 4.0) y DGT' }), 'bottom-left');
+    var atr = document.querySelector('.maplibregl-ctrl-attrib'); // plegada de inicio: se abre al pulsar la «i»
+    if (atr) { atr.classList.remove('maplibregl-compact-show'); atr.removeAttribute('open'); }
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
     if (es3D) map.addControl({ // alterna entre la vista inclinada y la vista desde arriba
       onAdd: function () {
@@ -320,7 +349,7 @@ h1 em { font-style: normal; color: var(--accent); }
         });
         return d;
       }, onRemove: function () {} }, 'bottom-right');
-    map.setPadding(ancho() ? { left: 370, top: 0, right: 0, bottom: 0 } : { left: 0, top: 0, right: 0, bottom: 190 });
+    margen();
     map.on('style.load', function () { listo = true; pintarCapas(); });
     map.on('zoom', pista);
     ['stops', 'cams'].forEach(function (c) {
@@ -328,14 +357,27 @@ h1 em { font-style: normal; color: var(--accent); }
       map.on('mouseleave', c, function () { map.getCanvas().style.cursor = ''; });
     });
     map.on('click', 'stops', function (e) { var s = stops[e.features[0].properties.id]; if (s) abrir([s.lon, s.lat], popParada(s)); });
-    map.on('click', 'cams', function (e) { var c = cams[e.features[0].properties.i]; if (c) abrir([c.lon, c.lat], popCam(c), 300); });
+    map.on('click', 'cams', function (e) { var c = cams[e.features[0].properties.i]; if (c) abrirCam(c); });
     arrancar();
   });
   function reestilar() { if (map) cargarEstilo().then(function (st) { listo = false; map.setStyle(st); }); }
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', reestilar);
   new MutationObserver(reestilar).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
+  // Margen del mapa que tapa el panel, para centrar bien lo que se encuadra.
+  function margen() {
+    if (!map) return;
+    var mini = $('app').classList.contains('mini');
+    map.setPadding(mini ? { left: 0, top: 0, right: 0, bottom: 0 } : ancho() ? { left: 370, top: 0, right: 0, bottom: 0 } : { left: 0, top: 0, right: 0, bottom: $('panel').offsetHeight + 16 });
+  }
+  // Enlace a Google Maps con la ruta hasta ese punto.
+  function comoLlegar(lat, lon) {
+    return '<p><a class="gm" href="https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lon + '" target="_blank" rel="noopener">Cómo llegar con Google Maps</a></p>';
+  }
+  var hHora = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Madrid' });
+  var camTimer = null;
   function abrir(lngLat, html, maxw) {
+    clearInterval(camTimer);
     if (popup) popup.remove();
     popup = new maplibregl.Popup({ offset: 14, maxWidth: (maxw || 280) + 'px' }).setLngLat(lngLat).setHTML(html).addTo(map);
   }
@@ -387,11 +429,20 @@ h1 em { font-style: normal; color: var(--accent); }
   }
   function popParada(s) {
     return '<div class="pop"><h3>' + esc(s.n) + '</h3><div class="sub">Parada ' + s.id + (s.d ? ' · ' + esc(s.d) : '') + '</div>' +
-      '<div class="chips">' + s.lines.map(function (l) { return '<button class="chip" type="button" style="' + estiloLinea(l) + '" data-line="' + l.c + '" title="' + esc(l.n) + '">' + esc(l.u) + '</button>'; }).join('') + '</div></div>';
+      '<div class="chips">' + s.lines.map(function (l) { return '<button class="chip" type="button" style="' + estiloLinea(l) + '" data-line="' + l.c + '" title="' + esc(l.n) + '">' + esc(l.u) + '</button>'; }).join('') + '</div>' + comoLlegar(s.lat, s.lon) + '</div>';
   }
 
   // ---------- Capas dibujadas en el mapa: recorrido, paradas y cámaras ----------
   var cams = [];
+  // Iconos del mapa: señal de parada de bus y símbolo de cámara (otro color para las webcams enlazadas).
+  var SVG_BUS = "<svg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'><rect x='1' y='1' width='22' height='22' rx='5' fill='#1766c2' stroke='#fff' stroke-width='1.5'/><path fill='#fff' d='M7 6.5h10A1.5 1.5 0 0 1 18.5 8v7.5a1 1 0 0 1-1 1H17v1a1 1 0 0 1-2 0v-1H9v1a1 1 0 0 1-2 0v-1h-.5a1 1 0 0 1-1-1V8A1.5 1.5 0 0 1 7 6.5z'/><rect x='7' y='8' width='10' height='4' rx='.6' fill='#1766c2'/><circle cx='8.6' cy='14.2' r='1' fill='#1766c2'/><circle cx='15.4' cy='14.2' r='1' fill='#1766c2'/></svg>";
+  var SVG_CAM = "<svg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='12' r='11' fill='COLOR' stroke='#fff' stroke-width='1.5'/><rect x='5.5' y='8.5' width='9' height='7' rx='1.5' fill='#fff'/><path fill='#fff' d='M15.2 11l3.6-2.2v6.4L15.2 13z'/></svg>";
+  var iconos = {};
+  [['parada', SVG_BUS], ['camara', SVG_CAM.replace('COLOR', '#33475b')], ['webcam', SVG_CAM.replace('COLOR', '#0b6f6a')]].forEach(function (par) {
+    var img = new Image(52, 52);
+    img.onload = function () { iconos[par[0]] = img; pintarCapas(); };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(par[1].replace('<svg ', '<svg width="52" height="52" '));
+  });
   var punto = function (lon, lat, props) { return { type: 'Feature', properties: props, geometry: { type: 'Point', coordinates: [lon, lat] } }; };
   function datosCapas() {
     var ruta = [], ps = [];
@@ -400,7 +451,7 @@ h1 em { font-style: normal; color: var(--accent); }
       if (r) ruta.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: r.pts.map(function (p) { return [p[1], p[0]]; }) } });
     });
     for (var id in stops) { var s = stops[id]; if (!selected || s.lines.indexOf(selected) >= 0) ps.push(punto(s.lon, s.lat, { id: s.id })); }
-    return { route: ruta, stops: ps, cams: cams.map(function (c, i) { return punto(c.lon, c.lat, { i: i }); }) };
+    return { route: ruta, stops: ps, cams: cams.map(function (c, i) { return punto(c.lon, c.lat, { i: i, f: c.f }); }) };
   }
   function pintarCapas() {
     if (!map || !listo) return;
@@ -408,18 +459,16 @@ h1 em { font-style: normal; color: var(--accent); }
     ['route', 'stops', 'cams'].forEach(function (n) {
       if (map.getSource(n)) map.getSource(n).setData(fc(d[n])); else map.addSource(n, { type: 'geojson', data: fc(d[n]) });
     });
+    for (var ic in iconos) if (!map.hasImage(ic)) map.addImage(ic, iconos[ic], { pixelRatio: 2 });
     if (!map.getLayer('route')) {
       map.addLayer({ id: 'route-casing', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 8, 'line-opacity': .9 } });
       map.addLayer({ id: 'route', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 5 } });
-      map.addLayer({ id: 'cams', type: 'circle', source: 'cams', paint: { 'circle-radius': 4.5, 'circle-stroke-width': 2.5 } });
-      map.addLayer({ id: 'stops', type: 'circle', source: 'stops', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 3, 16, 5], 'circle-stroke-width': 1.8 } });
+      var tam = ['interpolate', ['linear'], ['zoom'], 11, .5, 14, .72, 17, 1];
+      map.addLayer({ id: 'cams', type: 'symbol', source: 'cams', layout: { 'icon-image': ['match', ['get', 'f'], 'web', 'webcam', 'camara'], 'icon-size': tam, 'icon-allow-overlap': true, 'icon-ignore-placement': true } });
+      map.addLayer({ id: 'stops', type: 'symbol', source: 'stops', layout: { 'icon-image': 'parada', 'icon-size': ['interpolate', ['linear'], ['zoom'], 11, .4, 15, .55, 17.5, .9], 'icon-allow-overlap': true, 'icon-ignore-placement': true } });
     }
     map.setPaintProperty('route-casing', 'line-color', css('--panel'));
     map.setPaintProperty('route', 'line-color', selected ? selected.color : css('--accent'));
-    map.setPaintProperty('cams', 'circle-color', css('--panel'));
-    map.setPaintProperty('cams', 'circle-stroke-color', css('--cam'));
-    map.setPaintProperty('stops', 'circle-color', css('--stop-fill'));
-    map.setPaintProperty('stops', 'circle-stroke-color', selected ? selected.color : css('--stop'));
     map.setLayerZoomRange('stops', selected ? 0 : 14.5, 24);
     map.setLayoutProperty('stops', 'visibility', shown.stops || selected ? 'visible' : 'none');
     map.setLayoutProperty('cams', 'visibility', shown.cams && !selected ? 'visible' : 'none');
@@ -436,7 +485,7 @@ h1 em { font-style: normal; color: var(--accent); }
     for (var k in lines) { lines[k].chip.classList.toggle('on', lines[k] === selected); lines[k].chip.setAttribute('aria-pressed', String(lines[k] === selected)); }
     infoLinea();
     if (selected) {
-      if (!ancho()) map.setPadding({ left: 0, top: 0, right: 0, bottom: $('panel').offsetHeight + 16 }); // el panel tapa la parte baja
+      margen();
       if (selected.chip.scrollIntoView) selected.chip.scrollIntoView({ block: 'nearest', inline: 'center' });
       var todos = [];
       ['1', '2'].forEach(function (dir) { var r = selected.routes[dir]; if (r) todos = todos.concat(r.pts); });
@@ -457,7 +506,7 @@ h1 em { font-style: normal; color: var(--accent); }
     for (var id in buses) if (buses[id].c === selected.c) n++;
     ['1', '2'].forEach(function (dir) { var r = selected.routes[dir]; if (r && !r.real) real = false; });
     $('lineText').innerHTML = '<span class="pill" style="' + estiloLinea(selected) + '">' + esc(selected.u) + '</span> <b>' + esc(selected.ida) + ' ↔ ' + esc(selected.vuelta) + '</b>' +
-      '<div class="sub">' + (n ? n + (n === 1 ? ' autobús' : ' autobuses') + ' en ruta ahora' : 'Sin autobuses en ruta ahora') + (live ? ', en directo.' : '.') +
+      '<div class="sub">' + (n ? n + (n === 1 ? ' bus' : ' buses') + ' en ruta ahora' : 'Sin buses en ruta ahora') + (live ? ', en directo.' : '.') +
       (real ? '' : ' La EMT no publica el trazado de esta línea: se dibuja uniendo las paradas.') + '</div>';
   }
   function dimBus(b) { b.el.classList.toggle('dim', !!selected && b.c !== selected.c); }
@@ -500,10 +549,10 @@ h1 em { font-style: normal; color: var(--accent); }
 
   function busPopup(b) {
     var l = lines[b.c], dest = l ? (b.s === 1 ? l.vuelta : l.ida) : '', st = stops[b.p];
-    var note = live ? 'Posición real publicada por la EMT ' + ago(Math.round((Date.now() - busUpd) / 1000)) + '.' : 'Posición de la última lectura guardada.';
-    return '<div class="pop"><h3><span class="pill" style="' + (l ? estiloLinea(l) : '--c:' + css('--muted')) + '">' + esc(l ? l.u : b.c) + '</span> ' + (dest ? 'hacia ' + esc(dest) : 'Autobús') + '</h3>' +
+    var note = live ? 'Posición publicada por la EMT ' + ago(Math.round((Date.now() - busUpd) / 1000)) + '. Depende de la EMT, que la actualiza cada 5 minutos aproximadamente.' : 'Posición de la última lectura guardada.';
+    return '<div class="pop"><h3><span class="pill" style="' + (l ? estiloLinea(l) : '--c:' + css('--muted')) + '">' + esc(l ? l.u : b.c) + '</span> ' + (dest ? 'hacia ' + esc(dest) : 'Bus') + '</h3>' +
       '<div class="sub">' + (l ? esc(l.n) : '') + '</div>' +
-      '<p>Autobús n.º ' + esc(b.id) + (st ? '<br>Última parada registrada: ' + esc(st.n) : '') + '</p>' +
+      '<p>Bus n.º ' + esc(b.id) + (st ? '<br>Última parada registrada: ' + esc(st.n) : '') + '</p>' +
       '<div class="note">' + note + '</div></div>';
   }
   function ago(s) { return s < 90 ? 'hace ' + s + ' s' : 'hace ' + Math.round(s / 60) + ' min'; }
@@ -518,7 +567,7 @@ h1 em { font-style: normal; color: var(--accent); }
     }
     var age = Math.round((Date.now() - busUpd) / 1000);
     st.className = age < 420 ? 'live' : 'late';
-    tx.textContent = (age < 420 ? 'En directo' : 'La fuente va con retraso') + ' · posición real de los autobuses ' + ago(age);
+    tx.textContent = age < 420 ? 'En directo · la EMT publicó la posición de los buses ' + ago(age) : 'La EMT no actualiza la posición de los buses desde ' + ago(age);
   }
 
   // ---------- Aparcamientos ----------
@@ -532,7 +581,8 @@ h1 em { font-style: normal; color: var(--accent); }
       var m = marcador('park-ic', '<div class="park num" style="--c:var(' + tok + ')"><i>P</i>' + p.libres + '</div>', [p.lon, p.lat], function () {
         abrir([p.lon, p.lat], '<div class="pop"><h3>Aparcamiento ' + esc(p.n) + '</h3><div class="sub">' + esc(p.d) + '</div>' +
           '<p><span class="fig num" style="color:var(' + tok + ')">' + fmt.format(p.libres) + '</span> plazas libres</p>' +
-          '<div class="note">Aparcamiento público municipal.' + (p.aprox ? ' Ubicación aproximada: la fuente no da sus coordenadas.' : '') + '</div></div>');
+          comoLlegar(p.lat, p.lon) +
+          '<div class="note">Aparcamiento público municipal. Plazas leídas a las ' + hHora.format(new Date(d.t)) + '.' + (p.aprox ? ' Ubicación aproximada: la fuente no da sus coordenadas.' : '') + '</div></div>');
       });
       m.getElement().style.zIndex = 3;
       parkMarkers.push(m);
@@ -553,7 +603,7 @@ h1 em { font-style: normal; color: var(--accent); }
       corteMarkers.push(marcador('corte-ic', '<div class="corte' + (total ? '' : ' parcial') + (futuro ? ' futuro' : '') + '"></div>', [c.lon, c.lat], function () {
         abrir([c.lon, c.lat], '<div class="pop"><h3>' + esc(c.af || 'Afección al tráfico') + '</h3><div class="sub">' + esc([c.tipo, c.dir].filter(Boolean).join(' · ')) + '</div>' +
           '<p>' + esc(c.d) + '</p><p><span class="tag" style="background:var(' + (futuro ? '--muted' : tok) + ')">' + (futuro ? 'Programado' : 'En vigor') + '</span> ' +
-          'Del ' + fDate(c.desde) + ' al ' + fDate(c.hasta) + '</p>' + (c.nota ? '<div class="note">' + esc(c.nota) + '</div>' : '') + '</div>', 290);
+          'Del ' + fDate(c.desde) + ' al ' + fDate(c.hasta) + '</p>' + comoLlegar(c.lat, c.lon) + (c.nota ? '<div class="note">' + esc(c.nota) + '</div>' : '') + '</div>', 290);
       }));
     });
     $('nCortes').textContent = fmt.format(n);
@@ -561,11 +611,54 @@ h1 em { font-style: normal; color: var(--accent); }
 
   // ---------- Cámaras ----------
   function loadCams(d) { cams = d.list; $('nCams').textContent = fmt.format(cams.length); pintarCapas(); }
-  function popCam(c) {
-    return '<div class="pop"><h3>' + esc(c.d || c.n) + '</h3><div class="sub">' + esc(c.n) + '</div>' +
-      (c.img ? '<img alt="Imagen de la cámara" src="' + esc(c.img) + '?t=' + Math.floor(Date.now() / 30000) + '" onerror="this.outerHTML=\'<p class=&quot;sub&quot;>La imagen no se puede mostrar aquí.</p>\'">' : '') +
-      (c.url ? '<p><a href="' + esc(c.url) + '" target="_blank" rel="noopener">Abrir la cámara en movilidad.malaga.eu</a></p>' : '') + '</div>';
+  function abrirCam(c) {
+    var titular = c.f === 'dgt' ? 'Cámara de la DGT' : c.n;
+    abrir([c.lon, c.lat], '<div class="pop"><h3>' + esc(c.d || c.n) + '</h3><div class="sub">' + esc(titular) + '</div>' +
+      (c.img ? '<img id="camImg" alt="Imagen de la cámara"><div class="sub" id="camHora"></div>' : '') +
+      (c.f === 'web' ? '<p><a href="' + esc(c.url) + '" target="_blank" rel="noopener">Ver la webcam en directo</a></p><div class="sub">Se abre en meteo365.es. Ubicación aproximada.</div>'
+        : c.url ? '<p><a href="' + esc(c.url) + '" target="_blank" rel="noopener">Abrir la cámara en movilidad.malaga.eu</a></p>' : '') +
+      comoLlegar(c.lat, c.lon) + '</div>', 300);
+    var img = $('camImg');
+    if (!img) return;
+    var cargar = function () { img.src = c.img + (c.img.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now(); }; // evita la copia guardada
+    img.addEventListener('load', function () { $('camHora').textContent = 'Imagen pedida a las ' + hHora.format(new Date()) + '. Se renueva cada 15 segundos.'; });
+    img.addEventListener('error', function () { clearInterval(camTimer); img.hidden = true; $('camHora').textContent = 'La imagen no se puede mostrar ahora.'; });
+    cargar();
+    camTimer = setInterval(function () { if (document.body.contains(img)) cargar(); else clearInterval(camTimer); }, 15000);
   }
+
+  // ---------- Buscador de calles (OpenStreetMap) ----------
+  function irA(lat, lon, nombre, detalle) {
+    $('resultados').hidden = true;
+    map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 16.5), duration: 1200 });
+    abrir([lon, lat], '<div class="pop"><h3>' + esc(nombre) + '</h3>' + (detalle ? '<div class="sub">' + esc(detalle) + '</div>' : '') + comoLlegar(lat, lon) + '</div>');
+  }
+  $('buscar').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var q = $('q').value.trim(), ul = $('resultados');
+    if (q.length < 3) return;
+    var aviso = function (t) { ul.innerHTML = '<li class="msg">' + t + '</li>'; ul.hidden = false; };
+    aviso('Buscando…');
+    fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&accept-language=es&bounded=1&viewbox=-4.62,36.80,-4.28,36.62&q=' + encodeURIComponent(q))
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (res) {
+        if (!res.length) return aviso('No se ha encontrado en Málaga. Prueba con otro nombre.');
+        var items = res.map(function (x) {
+          var partes = String(x.display_name).split(', ');
+          return { lat: Number(x.lat), lon: Number(x.lon), n: x.name || partes[0], d: partes.slice(1, 3).join(', ') };
+        });
+        if (items.length === 1) return irA(items[0].lat, items[0].lon, items[0].n, items[0].d);
+        ul.innerHTML = ''; ul.hidden = false;
+        items.forEach(function (it) {
+          var li = document.createElement('li'), b = document.createElement('button');
+          b.type = 'button'; b.innerHTML = esc(it.n) + '<span class="sub">' + esc(it.d) + '</span>';
+          b.addEventListener('click', function () { irA(it.lat, it.lon, it.n, it.d); });
+          li.appendChild(b); ul.appendChild(li);
+        });
+      })
+      .catch(function () { aviso('El buscador no está disponible ahora.'); });
+  });
+  $('q').addEventListener('input', function () { if (!this.value) $('resultados').hidden = true; });
 
   // ---------- Reloj ----------
   var fHora = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Madrid' });
@@ -597,7 +690,16 @@ h1 em { font-style: normal; color: var(--accent); }
   $('more').addEventListener('click', function () {
     var open = $('panel').classList.toggle('open');
     this.textContent = open ? 'Menos' : 'Más'; this.setAttribute('aria-expanded', String(open));
+    margen();
   });
+  // Minimizar el panel para moverse por el mapa sin nada delante.
+  function minimizar(si) {
+    $('app').classList.toggle('mini', si); margen();
+    try { localStorage.setItem('mini', si ? '1' : ''); } catch (e) {}
+  }
+  $('mini').addEventListener('click', function () { minimizar(true); });
+  $('abrir').addEventListener('click', function () { minimizar(false); });
+  try { if (localStorage.getItem('mini')) $('app').classList.add('mini'); } catch (e) {}
 
   // ---------- Carga y refresco ----------
   function get(name) { return fetch('data/' + name + '.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }); }
