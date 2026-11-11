@@ -262,7 +262,7 @@ h1 em { font-style: normal; color: var(--accent); }
 
     <div id="layers">
       <button class="layer" type="button" data-layer="buses" aria-pressed="true">
-        <span class="big num" id="nBuses"><span class="carga" role="img" aria-label="Cargando"></span></span><span class="sw sw-bus"></span><span class="lbl">Buses</span>
+        <span class="big num" id="nBuses"><span class="carga" role="img" aria-label="Cargando"></span></span><span class="sw sw-bus"></span><span class="lbl">Buses en directo</span>
       </button>
       <button class="layer" type="button" data-layer="park" aria-pressed="true">
         <span class="big num" id="nPark"><span class="carga" role="img" aria-label="Cargando"></span></span><span class="sw sw-park"></span><span class="lbl">Plazas parking</span>
@@ -437,7 +437,8 @@ h1 em { font-style: normal; color: var(--accent); }
 
   // De inicio se ven los buses, los aparcamientos y las incidencias de tráfico; el resto se activa desde el panel.
   var shown = { buses: true, park: true, cortes: false, cams: false, stops: false, incid: true };
-  try { var saved = JSON.parse(localStorage.getItem('capas3') || '{}'); for (var k in shown) if (typeof saved[k] === 'boolean') shown[k] = saved[k]; } catch (e) {}
+  // No se recuerda entre visitas lo que el usuario active o desactive: la web abre siempre igual.
+  try { localStorage.removeItem('capas3'); localStorage.removeItem('capas2'); localStorage.removeItem('capas'); } catch (e) {}
 
   // ---------- Geometría ----------
   var R = 6371000, RAD = Math.PI / 180;
@@ -944,7 +945,6 @@ h1 em { font-style: normal; color: var(--accent); }
     var name = btn.dataset.layer; applyLayer(name);
     btn.addEventListener('click', function () {
       shown[name] = !shown[name]; applyLayer(name);
-      try { localStorage.setItem('capas3', JSON.stringify(shown)); } catch (e) {}
     });
   });
   $('lineClear').addEventListener('click', function () { selectLine(null); });
