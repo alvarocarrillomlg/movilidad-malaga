@@ -266,7 +266,7 @@ h1 em { font-style: normal; color: var(--accent); }
         <span class="big num" id="nBuses"><span class="carga" role="img" aria-label="Cargando"></span></span><span class="sw sw-bus"></span><span class="lbl">Buses en directo</span>
       </button>
       <button class="layer" type="button" data-layer="park" aria-pressed="true">
-        <span class="big num" id="nPark"><span class="carga" role="img" aria-label="Cargando"></span></span><span class="sw sw-park"></span><span class="lbl">Plazas parking</span>
+        <span class="big num" id="nPark"><span class="carga" role="img" aria-label="Cargando"></span></span><span class="sw sw-park"></span><span class="lbl">Plazas parking libres</span>
       </button>
       <button class="layer" type="button" data-layer="cortes" aria-pressed="true">
         <span class="big num" id="nCortes"><span class="carga" role="img" aria-label="Cargando"></span></span><span class="sw sw-corte"></span><span class="lbl">Cortes y obras</span>
@@ -714,7 +714,7 @@ h1 em { font-style: normal; color: var(--accent); }
 
   function busPopup(b) {
     var l = lines[b.c], dest = l ? (b.s === 1 ? l.vuelta : l.ida) : '', st = stops[b.p];
-    var note = live ? 'Posición publicada por la EMT ' + ago(Math.round((Date.now() - busUpd) / 1000)) + '. Depende de la EMT, que la actualiza cada 5 minutos aproximadamente.' : 'Posición de la última lectura guardada.';
+    var note = live ? 'Posición de ' + ago(Math.round((Date.now() - busUpd) / 1000)) + ', según la EMT.' : 'Posición de la última lectura guardada.';
     return '<div class="pop"><h3><span class="pill" style="' + (l ? estiloLinea(l) : '--c:' + css('--muted')) + '">' + esc(l ? l.u : b.c) + '</span> ' + (dest ? 'hacia ' + esc(dest) : 'Bus') + '</h3>' +
       '<div class="sub">' + (l ? esc(l.n) : '') + '</div>' +
       '<p>Bus n.º ' + esc(b.id) + (st ? '<br>Última parada registrada: ' + esc(st.n) : '') + '</p>' +
