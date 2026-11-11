@@ -188,6 +188,10 @@ h1 em { font-style: normal; color: var(--accent); }
 .maplibregl-ctrl-attrib { font-size: 10.5px; }
 .maplibregl-ctrl-bottom-right { right: env(safe-area-inset-right, 0px); bottom: env(safe-area-inset-bottom, 0px); }
 #vista { width: 29px; height: 29px; font: 700 11px/1 var(--font); color: #333; }
+/* Botón «Mi ubicación» con su nombre escrito */
+.maplibregl-ctrl-group button.maplibregl-ctrl-geolocate { width: auto; display: flex; align-items: center; padding-right: 10px; }
+.maplibregl-ctrl-group button.maplibregl-ctrl-geolocate .maplibregl-ctrl-icon { width: 29px; height: 29px; flex: none; }
+.maplibregl-ctrl-geolocate::after { content: "Mi ubicación"; font: 600 12px/1 var(--font); color: #333; white-space: nowrap; }
 
 .pop h3 { margin: 0 18px 2px 0; font-size: 15px; font-weight: 700; line-height: 1.2; }
 .pop .sub { color: var(--muted); font-size: 12.5px; }
@@ -237,7 +241,7 @@ h1 em { font-style: normal; color: var(--accent); }
   .lchip { flex: none; height: 32px; min-width: 38px; }
   #reloj { padding-top: 8px; }
   #hora { font-size: 20px; }
-  .maplibregl-ctrl-bottom-right { top: env(safe-area-inset-top, 0px); bottom: auto; }
+  .maplibregl-ctrl-bottom-right { top: calc(14px + env(safe-area-inset-top, 0px)); bottom: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
   #status.live #dot { animation: none; }
