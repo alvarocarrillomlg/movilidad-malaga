@@ -137,6 +137,13 @@ h1 em { font-style: normal; color: var(--accent); }
   padding: 1px 5px; border-radius: 4px; background: color-mix(in srgb, var(--panel) 70%, transparent); color: var(--muted); font-size: 10px; line-height: 1.3; }
 #creditos a { color: inherit; text-decoration: none; }
 
+/* Imagen de cámara ampliada, casi a pantalla completa */
+#visor { position: absolute; inset: 0; z-index: 20; display: grid; grid-template-rows: auto 1fr; gap: 8px; padding: max(12px, env(safe-area-inset-top, 0px)) 12px max(12px, env(safe-area-inset-bottom, 0px));
+  background: rgba(10, 18, 24, .88); cursor: zoom-out; }
+#visorCab { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #fff; font-weight: 600; font-size: 15px; }
+#visorCerrar { width: 38px; height: 38px; flex: none; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .16); color: #fff; font-size: 24px; line-height: 1; cursor: pointer; }
+#visorImg { width: 100%; height: 100%; min-height: 0; object-fit: contain; border-radius: 8px; }
+
 /* Botones del panel: desplegar (móvil) y minimizar */
 #acciones { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; }
 #acciones button { padding: 5px 10px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-size: 12.5px; }
@@ -202,7 +209,7 @@ h1 em { font-style: normal; color: var(--accent); }
 .pop a { color: var(--accent); font-weight: 600; }
 .pop .gm { display: inline-flex; align-items: center; gap: 5px; }
 .pop .gm::before { content: ""; width: 8px; height: 8px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--accent); }
-.pop img { display: block; width: 260px; max-width: 100%; margin-top: 9px; border-radius: 8px; background: var(--panel-2); aspect-ratio: 4 / 3; object-fit: cover; }
+.pop img { cursor: zoom-in; display: block; width: 260px; max-width: 100%; margin-top: 9px; border-radius: 8px; background: var(--panel-2); aspect-ratio: 4 / 3; object-fit: cover; }
 .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
 #pasos { margin-top: 8px; max-height: 232px; overflow-y: auto; }
 .paso { display: grid; grid-template-columns: 38px 1fr auto; gap: 8px; align-items: center; padding: 4px 0; border-top: 1px solid var(--line); }
@@ -310,6 +317,10 @@ h1 em { font-style: normal; color: var(--accent); }
   </section>
 
   <div id="creditos">Mapa: <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openmaptiles.org" target="_blank" rel="noopener">OpenMapTiles</a>, datos de <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · Datos: <a href="https://datosabiertos.malaga.eu" target="_blank" rel="noopener">Ayto. de Málaga</a> (CC BY 4.0), DGT</div>
+  <div id="visor" hidden role="dialog" aria-label="Imagen de la cámara ampliada">
+    <div id="visorCab"><span id="visorTit"></span><button id="visorCerrar" type="button" aria-label="Cerrar">×</button></div>
+    <img id="visorImg" alt="Imagen de la cámara ampliada" referrerpolicy="no-referrer">
+  </div>
   <button id="abrir" class="franja" type="button" aria-label="Mostrar el panel" title="Mostrar el panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
 </div>
 
@@ -346,6 +357,8 @@ h1 em { font-style: normal; color: var(--accent); }
         if (capa3d) { capa3d.paint['fill-extrusion-color'] = css('--edificio'); capa3d.paint['fill-extrusion-opacity'] = .88; }
         // Fuera los puntos de interés del mapa base (paradas, restaurantes, monumentos, tiendas…): solo estorban.
         st.layers = st.layers.filter(function (l) { return l['source-layer'] !== 'poi'; });
+        // Los rótulos de agua de clase «lake» son casi todos fuentes ornamentales: fuera. Se conservan los del mar.
+        st.layers.forEach(function (l) { if (l['source-layer'] === 'water_name') l.filter = ['all', l.filter || true, ['!=', ['get', 'class'], 'lake']]; });
         es3D = true; return st;
       })
       .catch(function () { es3D = false; return estiloPlano(); });
@@ -384,6 +397,8 @@ h1 em { font-style: normal; color: var(--accent); }
     // Pulsar una calle: su nombre y las líneas de bus que pasan por ese punto.
     map.on('click', function (e) {
       if (!map.getLayer('calles-toque') || map.queryRenderedFeatures(e.point, { layers: ['stops', 'cams'] }).length) return;
+      // Sobre el mar no hay calles que nombrar, aunque pase cerca una línea de barco.
+      if (map.queryRenderedFeatures(e.point).some(function (x) { return x.sourceLayer === 'water' && x.layer.type === 'fill'; })) return;
       // Se busca la calle cada vez más lejos del punto pulsado, para que valga con tocar cerca de ella.
       var f = null;
       [5, 12, 22].some(function (r) {
@@ -625,7 +640,7 @@ h1 em { font-style: normal; color: var(--accent); }
     for (var ic in iconos) if (!map.hasImage(ic)) map.addImage(ic, iconos[ic], { pixelRatio: 2 });
     // Capa invisible con el eje de las calles del mapa base: sirve para saber qué calle se ha pulsado.
     if (map.getSource('openmaptiles') && !map.getLayer('calles-toque')) map.addLayer({ id: 'calles-toque', type: 'line', source: 'openmaptiles', 'source-layer': 'transportation_name',
-      minzoom: 12, filter: ['!', ['match', ['get', 'class'], ['ferry', 'rail', 'transit', 'aerialway'], true, false]], // solo calles: ni rutas de barco ni vías
+      minzoom: 12, filter: ['match', ['get', 'class'], ['motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'minor', 'service', 'track', 'path', 'busway', 'raceway'], true, false], // solo calles: ni rutas de barco ni vías
       paint: { 'line-width': 16, 'line-opacity': 0 } });
     if (!map.getLayer('route')) {
       map.addLayer({ id: 'route-casing', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 8, 'line-opacity': .9 } });
@@ -800,8 +815,7 @@ h1 em { font-style: normal; color: var(--accent); }
   function abrirCam(c) {
     var titular = c.f === 'dgt' ? 'Cámara de la DGT' : c.n;
     abrir([c.lon, c.lat], '<div class="pop"><h3>' + esc(c.d || c.n) + '</h3><div class="sub">' + esc(titular) + '</div>' +
-      (c.img ? '<img id="camImg" alt="Imagen de la cámara"><div class="sub" id="camHora"></div>' : '') +
-      (c.url ? '<p><a href="' + esc(c.url) + '" target="_blank" rel="noopener">Abrir la cámara en movilidad.malaga.eu</a></p>' : '') +
+      (c.img ? '<img id="camImg" alt="Imagen de la cámara. Pulsa para ampliarla" title="Pulsa para ampliar"><div class="sub" id="camHora"></div>' : '') +
       '</div>', 300);
     var img = $('camImg');
     if (!img) return;
@@ -812,7 +826,12 @@ h1 em { font-style: normal; color: var(--accent); }
     img.addEventListener('load', function () {
       // La DGT responde con un cartel de «imagen no disponible» (639 × 359) cuando la cámara está apagada.
       if (c.f === 'dgt' && img.naturalWidth === 639 && img.naturalHeight === 359) return sinImagen();
-      $('camHora').textContent = 'Imagen pedida a las ' + hHora.format(new Date()) + '. Se renueva cada 15 segundos.';
+      $('camHora').textContent = 'Imagen de las ' + hHora.format(new Date()) + '. Pulsa para ampliarla.';
+      if (!$('visor').hidden) $('visorImg').src = img.src;   // la ampliada se renueva a la vez
+    });
+    // Pulsar la imagen la abre casi a pantalla completa.
+    img.addEventListener('click', function () {
+      $('visorImg').src = img.src; $('visorTit').textContent = c.d || c.n; $('visor').hidden = false; $('visorCerrar').focus();
     });
     img.addEventListener('error', sinImagen);
     cargar();
@@ -970,6 +989,10 @@ h1 em { font-style: normal; color: var(--accent); }
   $('buscar').addEventListener('submit', function (e) { e.preventDefault(); clearTimeout(espera); sugerir(true); });
   $('q').addEventListener('input', function () { clearTimeout(espera); espera = setTimeout(sugerir, 140); });
   $('q').addEventListener('focus', function () { pedirCalles().catch(function () {}); });
+
+  function cerrarVisor() { $('visor').hidden = true; }
+  $('visor').addEventListener('click', cerrarVisor);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrarVisor(); });
 
   // ---------- Reloj ----------
   var fHora = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Madrid' });
