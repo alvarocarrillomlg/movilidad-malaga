@@ -23,22 +23,7 @@
   --shadow: 0 6px 24px rgba(19, 34, 44, .16);
   --font: Matter, "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0e171d; --panel: #16222b; --panel-2: #1d2c37; --ink: #e9eff2; --muted: #96a6b0;
-    --line: #2b3b47; --accent: #3cc4b9; --good: #4ccb8b; --warn: #f0ab3c; --bad: #ff7a70;
-    --cam: #9fb3c6; --stop: #e9eff2; --stop-fill: #16222b; --on-color: #0e171d; --edificio: #2c3a46;
-    --shadow: 0 6px 24px rgba(0, 0, 0, .5);
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0e171d; --panel: #16222b; --panel-2: #1d2c37; --ink: #e9eff2; --muted: #96a6b0;
-  --line: #2b3b47; --accent: #3cc4b9; --good: #4ccb8b; --warn: #f0ab3c; --bad: #ff7a70;
-  --cam: #9fb3c6; --stop: #e9eff2; --stop-fill: #16222b; --on-color: #0e171d; --edificio: #2c3a46;
-  --shadow: 0 6px 24px rgba(0, 0, 0, .5);
-  color-scheme: dark;
-}
+/* Un solo aspecto, claro, también cuando el dispositivo está en modo oscuro. */
 html, body { height: 100%; }
 body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 14px; line-height: 1.35; overflow: hidden; }
 * { box-sizing: border-box; }
@@ -297,8 +282,7 @@ h1 em { font-style: normal; color: var(--accent); }
   // ---------- Mapa base ----------
   // Mapa vectorial de OpenFreeMap con edificios en 3D. Si no se puede descargar (por ejemplo, en la
   // copia guardada sin conexión), se usa el mapa plano que acompaña a la página.
-  var VECTOR = { light: 'https://tiles.openfreemap.org/styles/liberty', dark: 'https://tiles.openfreemap.org/styles/dark' };
-  var esOscuro = function () { var t = document.documentElement.dataset.theme; return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; };
+  var VECTOR = 'https://tiles.openfreemap.org/styles/liberty';
   var es3D = false;
 
   function estiloPlano() {
@@ -306,22 +290,14 @@ h1 em { font-style: normal; color: var(--accent); }
     return { version: 8, sources: { base: { type: 'raster', tiles: [base + '{z}/{x}/{y}.png'], tileSize: 256, minzoom: 11, maxzoom: 15,
       attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' } },
       layers: [{ id: 'fondo', type: 'background', paint: { 'background-color': css('--bg') } },
-        { id: 'base', type: 'raster', source: 'base', paint: esOscuro()
-          ? { 'raster-saturation': -.75, 'raster-brightness-max': .42, 'raster-contrast': .15 }
-          : { 'raster-saturation': -.5, 'raster-contrast': -.05 } }] };
+        { id: 'base', type: 'raster', source: 'base', paint: { 'raster-saturation': -.5, 'raster-contrast': -.05 } }] };
   }
   function cargarEstilo() {
-    var oscuro = esOscuro();
-    return fetch(VECTOR[oscuro ? 'dark' : 'light'], { signal: AbortSignal.timeout ? AbortSignal.timeout(7000) : undefined })
+    return fetch(VECTOR, { signal: AbortSignal.timeout ? AbortSignal.timeout(7000) : undefined })
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(function (st) {
         var capa3d = st.layers.filter(function (l) { return l.type === 'fill-extrusion'; })[0];
         if (capa3d) { capa3d.paint['fill-extrusion-color'] = css('--edificio'); capa3d.paint['fill-extrusion-opacity'] = .88; }
-        else { // el estilo oscuro no trae edificios con altura: se añaden bajo los rótulos
-          var i = st.layers.findIndex(function (l) { return l.type === 'symbol'; });
-          st.layers.splice(i < 0 ? st.layers.length : i, 0, { id: 'edificios-3d', type: 'fill-extrusion', source: 'openmaptiles', 'source-layer': 'building', minzoom: 14,
-            paint: { 'fill-extrusion-color': css('--edificio'), 'fill-extrusion-height': ['get', 'render_height'], 'fill-extrusion-base': ['get', 'render_min_height'], 'fill-extrusion-opacity': .88 } });
-        }
         es3D = true; return st;
       })
       .catch(function () { es3D = false; return estiloPlano(); });
@@ -360,10 +336,6 @@ h1 em { font-style: normal; color: var(--accent); }
     map.on('click', 'cams', function (e) { var c = cams[e.features[0].properties.i]; if (c) abrirCam(c); });
     arrancar();
   });
-  function reestilar() { if (map) cargarEstilo().then(function (st) { listo = false; map.setStyle(st); }); }
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', reestilar);
-  new MutationObserver(reestilar).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-
   // Margen del mapa que tapa el panel, para centrar bien lo que se encuadra.
   function margen() {
     if (!map) return;
@@ -620,9 +592,16 @@ h1 em { font-style: normal; color: var(--accent); }
       comoLlegar(c.lat, c.lon) + '</div>', 300);
     var img = $('camImg');
     if (!img) return;
+    // El servidor municipal no entrega la imagen si la petición indica que viene de otra web: no se envía ese dato.
+    img.referrerPolicy = 'no-referrer';
     var cargar = function () { img.src = c.img + (c.img.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now(); }; // evita la copia guardada
-    img.addEventListener('load', function () { $('camHora').textContent = 'Imagen pedida a las ' + hHora.format(new Date()) + '. Se renueva cada 15 segundos.'; });
-    img.addEventListener('error', function () { clearInterval(camTimer); img.hidden = true; $('camHora').textContent = 'La imagen no se puede mostrar ahora.'; });
+    var sinImagen = function () { clearInterval(camTimer); img.hidden = true; $('camHora').textContent = 'Esta cámara no ofrece imagen en este momento.'; };
+    img.addEventListener('load', function () {
+      // La DGT responde con un cartel de «imagen no disponible» (639 × 359) cuando la cámara está apagada.
+      if (c.f === 'dgt' && img.naturalWidth === 639 && img.naturalHeight === 359) return sinImagen();
+      $('camHora').textContent = 'Imagen pedida a las ' + hHora.format(new Date()) + '. Se renueva cada 15 segundos.';
+    });
+    img.addEventListener('error', sinImagen);
     cargar();
     camTimer = setInterval(function () { if (document.body.contains(img)) cargar(); else clearInterval(camTimer); }, 15000);
   }
