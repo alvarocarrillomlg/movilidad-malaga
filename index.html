@@ -312,6 +312,8 @@ h1 em { font-style: normal; color: var(--accent); }
       .then(function (st) {
         var capa3d = st.layers.filter(function (l) { return l.type === 'fill-extrusion'; })[0];
         if (capa3d) { capa3d.paint['fill-extrusion-color'] = css('--edificio'); capa3d.paint['fill-extrusion-opacity'] = .88; }
+        // Fuera los puntos de interés del mapa base (paradas, restaurantes, monumentos, tiendas…): solo estorban.
+        st.layers = st.layers.filter(function (l) { return l['source-layer'] !== 'poi'; });
         es3D = true; return st;
       })
       .catch(function () { es3D = false; return estiloPlano(); });
