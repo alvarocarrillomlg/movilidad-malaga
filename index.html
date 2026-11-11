@@ -209,6 +209,7 @@ h1 em { font-style: normal; color: var(--accent); }
 .paso:first-child { border-top: 0; }
 .paso .chip { justify-self: start; min-width: 30px; }
 .paso .dest { min-width: 0; font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.paso .dest small { display: block; font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
 .paso .cuando b { font-size: 14px; }
 .chip { border: 0; border-radius: 5px; padding: 3px 6px; background: var(--c); color: var(--t, #fff); font: 700 11.5px/1.1 var(--font); cursor: pointer; }
 .pill { display: inline-block; border-radius: 6px; padding: 2px 7px; background: var(--c); color: var(--t, #fff); font-weight: 700; }
@@ -404,10 +405,7 @@ h1 em { font-style: normal; color: var(--accent); }
       var vistas = {}, pasan = [];
       (ejes.length ? ejes : [p]).forEach(function (q) { lineasEn(q).forEach(function (l) { if (!vistas[l.c]) { vistas[l.c] = 1; pasan.push(l); } }); });
       pasan.sort(function (a, b) { return a.u.localeCompare(b.u, 'es', { numeric: true }); });
-      abrir(e.lngLat, '<div class="pop"><h3>' + esc(nombre) + '</h3>' +
-        (pasan.length ? '<div class="sub">Líneas de bus que pasan por aquí:</div><div class="chips">' + pasan.map(function (l) {
-          return '<button class="chip" type="button" style="' + estiloLinea(l) + '" data-line="' + l.c + '" title="' + esc(l.n) + '">' + esc(l.u) + '</button>'; }).join('') + '</div>'
-          : '<div class="sub">No pasa ninguna línea de la EMT por este punto.</div>') + '</div>');
+      abrirCalle(e.lngLat, nombre, p, pasan);
     });
     map.on('click', 'cams', function (e) { var c = cams[e.features[0].properties.i]; if (c) abrirCam(c); });
     arrancar();
@@ -534,6 +532,52 @@ h1 em { font-style: normal; color: var(--accent); }
       return '<div class="paso"><button class="chip" type="button" style="' + estiloLinea(f.l) + '" data-line="' + f.l.c + '" title="' + esc(f.l.n) + '">' + esc(f.l.u) + '</button>' +
         '<span class="dest">' + (f.dest ? 'hacia ' + esc(f.dest) : esc(f.l.n)) + '</span><span class="num cuando"' + (f.hora && f.min <= 90 ? ' title="A las ' + f.hora + '"' : '') + '>' + cuando + '</span></div>';
     }).join('');
+  }
+  // Para una calle: próximo paso de cada línea en su parada más cercana al punto pulsado, por sentido.
+  function pasosCalle(p, pasan, d) {
+    var ahora = (Date.now() - d.d0) / 60000, filas = [];
+    pasan.forEach(function (l) {
+      var hechas = {};
+      ['1', '2'].forEach(function (dir) {
+        if (!l.routes[dir] || distanciaA(l.routes[dir].pts, p) > 45) return;   // ese sentido no pasa por aquí
+        var cerca = null, dm = Infinity;
+        (l.r[dir] || []).forEach(function (id) { var s = stops[id]; if (!s) return; var m = dist([s.lat, s.lon], p); if (m < dm) { dm = m; cerca = s; } });
+        if (!cerca || dm > 700) return;
+        (d.paradas[cerca.id] || []).forEach(function (g) {
+          if (g[0] !== l.c || hechas[g[1]]) return;
+          hechas[g[1]] = 1;
+          var prox = null;
+          for (var i = 0; i < g[2].length; i++) if (g[2][i] >= ahora - .5) { prox = g[2][i]; break; }
+          filas.push({ l: l, dest: d.destinos[g[1]], parada: cerca.n, min: prox == null ? null : Math.max(0, Math.round(prox - ahora)), hora: prox == null ? '' : hCorta.format(new Date(d.d0 + prox * 60000)) });
+        });
+      });
+      if (!filas.some(function (f) { return f.l === l; })) filas.push({ l: l, dest: '', parada: '', min: null, hora: '' });
+    });
+    filas.sort(function (a, b) { return (a.min == null ? 1e9 : a.min) - (b.min == null ? 1e9 : b.min) || a.l.u.localeCompare(b.l.u, 'es', { numeric: true }); });
+    return filas.map(function (f) {
+      var cuando = f.min == null ? '<span class="sub">sin más pasos hoy</span>' : f.min === 0 ? '<b>ahora</b>' : f.min <= 90 ? '<b>' + f.min + ' min</b>' : '<b>' + f.hora + '</b>';
+      return '<div class="paso"><button class="chip" type="button" style="' + estiloLinea(f.l) + '" data-line="' + f.l.c + '" title="' + esc(f.l.n) + '">' + esc(f.l.u) + '</button>' +
+        '<span class="dest">' + (f.dest ? 'hacia ' + esc(f.dest) : esc(f.l.n)) + (f.parada ? '<small>parada ' + esc(f.parada) + '</small>' : '') + '</span><span class="num cuando">' + cuando + '</span></div>';
+    }).join('');
+  }
+  function abrirCalle(lngLat, nombre, p, pasan) {
+    var chips = '<div class="chips">' + pasan.map(function (l) {
+      return '<button class="chip" type="button" style="' + estiloLinea(l) + '" data-line="' + l.c + '" title="' + esc(l.n) + '">' + esc(l.u) + '</button>'; }).join('') + '</div>';
+    abrir(lngLat, '<div class="pop"><h3>' + esc(nombre) + '</h3>' + (pasan.length
+      ? '<div class="sub">Líneas de bus que pasan por aquí y cuánto falta:</div><div id="pasos">' + chips + '<p class="sub">Cargando los próximos pasos…</p></div>' +
+        '<div class="note" id="pasosNota" hidden>Tiempos en la parada más cercana de cada línea, según el horario programado de la EMT, no en tiempo real.</div>'
+      : '<div class="sub">' + (Object.keys(lines).length ? 'No pasa ninguna línea de la EMT por este punto.' : 'Las líneas aún se están cargando. Vuelve a pulsar en unos segundos.') + '</div>') + '</div>', 320);
+    var caja = $('pasos');
+    if (!caja) return;
+    var pintar = function () {
+      pedirHorarios().then(function (d) {
+        if (!document.body.contains(caja)) return clearInterval(camTimer);
+        if (!live || d.parcial) { caja.lastChild.textContent = 'Los horarios de hoy no están disponibles.'; return; }
+        caja.innerHTML = pasosCalle(p, pasan, d); $('pasosNota').hidden = false;
+      }).catch(function () { if (document.body.contains(caja)) caja.lastChild.textContent = 'No se han podido cargar los horarios.'; });
+    };
+    pintar();
+    camTimer = setInterval(pintar, 20000);
   }
   function abrirParada(s) {
     abrir([s.lon, s.lat], '<div class="pop"><h3>' + esc(s.n) + '</h3><div class="sub">Parada ' + s.id + (s.d ? ' · ' + esc(s.d) : '') + '</div>' +
