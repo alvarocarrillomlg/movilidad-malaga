@@ -374,8 +374,9 @@ h1 em { font-style: normal; color: var(--accent); }
   var VISTA = { center: [-4.4222, 36.7186], zoom: 15.1, pitch: 55, bearing: -18 };
   cargarEstilo().then(function (estilo) {
     map = new maplibregl.Map({ container: 'map', style: estilo, center: VISTA.center, zoom: es3D ? VISTA.zoom : 14, pitch: es3D ? VISTA.pitch : 0,
-      bearing: es3D ? VISTA.bearing : 0, minZoom: 10.5, maxZoom: es3D ? 19 : 17, maxPitch: 70,
-      maxBounds: [[-4.85, 36.50], [-4.05, 36.95]], attributionControl: false,
+      bearing: es3D ? VISTA.bearing : 0, minZoom: es3D ? 8.5 : 10.5, maxZoom: es3D ? 19 : 17, maxPitch: 70,
+      maxBounds: es3D ? [[-5.75, 36.20], [-3.60, 37.40]] : [[-4.85, 36.50], [-4.05, 36.95]], // toda la provincia; el mapa de reserva solo cubre la ciudad
+      attributionControl: false,
       locale: { 'GeolocateControl.FindMyLocation': 'Mi ubicación', 'GeolocateControl.LocationNotAvailable': 'Ubicación no disponible',
         'NavigationControl.ZoomIn': 'Acercar', 'NavigationControl.ZoomOut': 'Alejar', 'NavigationControl.ResetBearing': 'Orientar al norte' } });
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
@@ -428,6 +429,7 @@ h1 em { font-style: normal; color: var(--accent); }
       var vistas = {}, pasan = [];
       (ejes.length ? ejes : [p]).forEach(function (q) { lineasEn(q).forEach(function (l) { if (!vistas[l.c]) { vistas[l.c] = 1; pasan.push(l); } }); });
       pasan.sort(function (a, b) { return a.u.localeCompare(b.u, 'es', { numeric: true }); });
+      if (!pasan.length) return;   // por esta calle no pasa ningún bus de la EMT: no hay nada que mostrar
       abrirCalle(e.lngLat, nombre, p, pasan);
     });
     map.on('click', 'cams', function (e) { var c = cams[e.features[0].properties.i]; if (c) abrirCam(c); });
@@ -1069,7 +1071,7 @@ h1 em { font-style: normal; color: var(--accent); }
     });
     every('aparcamientos', loadPark, 60);
     every('cortes', loadCortes, 600);
-    every('camaras', loadCams, 3600);
+    every('camaras', loadCams, 600); // cada 10 min: entran o salen según den imagen o la pierdan
     every('incidencias', loadIncid, 60);
   }
 })();
