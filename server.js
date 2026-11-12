@@ -25,7 +25,8 @@ async function datos(nombre) {
     return cache[nombre].json;
   }).catch((e) => {
     console.warn(`${nombre}: ${e.message}`);
-    if (c) { delete c.pendiente; return c.json; } // si la fuente falla, se sirve lo último que se tuvo
+    // Si la fuente falla, se sirve lo último que se tuvo (las incidencias, solo si tienen menos de 15 minutos).
+    if (c?.json && !(nombre === 'incidencias' && Date.now() - c.t > 15 * 60000)) { delete c.pendiente; return c.json; }
     delete cache[nombre];
     throw e;
   });

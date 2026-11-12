@@ -841,10 +841,13 @@ h1 em { font-style: normal; color: var(--accent); }
 
   // ---------- Incidencias de tráfico (DGT) ----------
   var SVG_AVISO = "<svg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'><path d='M12 2.6 22.4 20.6H1.6z' fill='#fff' stroke='COLOR' stroke-width='2.6' stroke-linejoin='round'/><path d='M12 9v5.2' stroke='#13222c' stroke-width='2.2' stroke-linecap='round'/><circle cx='12' cy='17.3' r='1.25' fill='#13222c'/></svg>";
-  var incidMarkers = [];
+  var incidMarkers = [], incidDato = null;
   function loadIncid(d) {
+    incidDato = d;
     incidMarkers.forEach(function (m) { m.remove(); }); incidMarkers = [];
-    d.list.forEach(function (x) {
+    // Fuera las que ya han terminado, y todas si la última lectura tiene más de 15 minutos (no se dan por actuales).
+    var vigentes = Date.now() - d.t > 15 * 60000 ? [] : d.list.filter(function (x) { return !x.hasta || x.hasta > Date.now(); });
+    vigentes.forEach(function (x) {
       var donde = [x.via, x.km ? 'km ' + x.km : '', x.mun, x.hacia ? 'hacia ' + x.hacia : ''].filter(Boolean).join(' · ');
       var m = marcador('incid-ic', '<div class="incid" title="' + esc(x.tit) + '">' + SVG_AVISO.replace('COLOR', x.grave ? '#d3202b' : '#d98a00') + '</div>', [x.lon, x.lat], function () {
         abrir([x.lon, x.lat], '<div class="pop"><h3>' + esc(x.tit) + '</h3><div class="sub">' + esc(donde) + '</div>' +
@@ -856,8 +859,12 @@ h1 em { font-style: normal; color: var(--accent); }
       m.getElement().style.zIndex = x.grave ? 2 : 1;
       incidMarkers.push(m);
     });
-    $('nIncid').textContent = fmt.format(d.list.length);
+    $('nIncid').textContent = fmt.format(vigentes.length);
   }
+  // Cada minuto se quitan las que hayan llegado a su hora de fin entre una lectura y la siguiente.
+  setInterval(function () {
+    if (incidDato && incidMarkers.length && incidDato.list.some(function (x) { return x.hasta && x.hasta <= Date.now(); }) || incidDato && incidMarkers.length && Date.now() - incidDato.t > 15 * 60000) loadIncid(incidDato);
+  }, 60000);
 
   // ---------- Cámaras ----------
   // Las municipales y de la DGT llegan en «camaras»; las webcams públicas de terceros (Windy), aparte en «webcams»,
@@ -1133,9 +1140,12 @@ h1 em { font-style: normal; color: var(--accent); }
         var el = $(CONTADOR[name]);
         if (el && el.querySelector('.carga')) { el.textContent = '–'; el.title = 'Sin datos de la fuente en este momento'; }
       })
-        .then(function () { setTimeout(run, (live ? secs : Math.max(secs, 300)) * 1000); });
+        // Las incidencias se leen cada minuto siempre; el resto espera más si los buses no van en directo.
+        .then(function () { setTimeout(run, (live || name === 'incidencias' ? secs : Math.max(secs, 300)) * 1000); });
     };
     run();
+    // Al volver a la pestaña, las incidencias se leen en el momento.
+    if (name === 'incidencias') document.addEventListener('visibilitychange', function () { if (!document.hidden) get(name).then(fn).catch(function () {}); });
   }
   function arrancar() {
     get('lineas').then(function (d) {
