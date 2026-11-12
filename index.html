@@ -199,6 +199,7 @@ h1 em { font-style: normal; color: var(--accent); }
 .maplibregl-ctrl-attrib { font-size: 10.5px; }
 .maplibregl-ctrl-bottom-right { right: env(safe-area-inset-right, 0px); bottom: env(safe-area-inset-bottom, 0px); }
 #vista { width: 29px; height: 29px; font: 700 11px/1 var(--font); color: #333; }
+.maplibregl-ctrl-group button#satelite { width: auto; height: 29px; padding: 0 10px; font: 600 12px/1 var(--font); color: #333; white-space: nowrap; }
 /* Botón «Mi ubicación» con su nombre escrito */
 .maplibregl-ctrl-group button.maplibregl-ctrl-geolocate { width: auto; display: flex; align-items: center; padding-right: 10px; }
 .maplibregl-ctrl-group button.maplibregl-ctrl-geolocate .maplibregl-ctrl-icon { width: 29px; height: 29px; flex: none; }
@@ -319,7 +320,7 @@ h1 em { font-style: normal; color: var(--accent); }
     <button id="mini" class="franja" type="button" aria-label="Minimizar el panel" title="Minimizar el panel para ver todo el mapa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
   </section>
 
-  <div id="creditos">Mapa: <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openmaptiles.org" target="_blank" rel="noopener">OpenMapTiles</a>, datos de <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · Datos: <a href="https://datosabiertos.malaga.eu" target="_blank" rel="noopener">Ayto. de Málaga</a> (CC BY 4.0), DGT</div>
+  <div id="creditos">Mapa: <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openmaptiles.org" target="_blank" rel="noopener">OpenMapTiles</a>, datos de <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · Datos: <a href="https://datosabiertos.malaga.eu" target="_blank" rel="noopener">Ayto. de Málaga</a> (CC BY 4.0), DGT<span id="creditoSat" hidden> · Ortofoto: <a href="https://pnoa.ign.es" target="_blank" rel="noopener">PNOA</a> cedido por © <a href="https://www.ign.es" target="_blank" rel="noopener">IGN</a> (CC BY 4.0)</span></div>
   <div id="visor" hidden role="dialog" aria-label="Imagen de la cámara ampliada">
     <div id="visorCab"><span id="visorTit"></span><button id="visorCerrar" type="button" aria-label="Cerrar">×</button></div>
     <div id="visorCuerpo">
@@ -370,6 +371,28 @@ h1 em { font-style: normal; color: var(--accent); }
       .catch(function () { es3D = false; return estiloPlano(); });
   }
 
+  // Vista satélite: la ortofoto del PNOA del Instituto Geográfico Nacional (fotos aéreas de unos 25 cm por píxel).
+  // Se pone debajo de los rótulos del mapa base y de todas las capas de la página, y oculta el resto del mapa
+  // base (calles, zonas, edificios en 3D) para que se vea la imagen. Solo se descarga si se activa.
+  var SATELITE = 'https://www.ign.es/wmts/pnoa-ma?request=GetTile&service=WMTS&version=1.0.0&layer=OI.OrthoimageCoverage' +
+    '&style=default&tilematrixset=GoogleMapsCompatible&format=image/jpeg&tilematrix={z}&tilerow={y}&tilecol={x}';
+  var capasBase = null; // capas del mapa base y su visibilidad original, antes de añadir las de la página
+  function verSatelite(si) {
+    if (!capasBase) return;
+    if (!map.getSource('satelite')) map.addSource('satelite', { type: 'raster', tiles: [SATELITE], tileSize: 256, maxzoom: 19,
+      attribution: 'PNOA cedido por © IGN' });
+    if (!map.getLayer('satelite')) {
+      var esBase = {}; capasBase.forEach(function (c) { esBase[c.id] = c.type; });
+      var encima = map.getStyle().layers.filter(function (l) { return !esBase[l.id] || esBase[l.id] === 'symbol'; })[0];
+      map.addLayer({ id: 'satelite', type: 'raster', source: 'satelite', layout: { visibility: 'none' } }, encima && encima.id);
+    }
+    map.setLayoutProperty('satelite', 'visibility', si ? 'visible' : 'none');
+    capasBase.forEach(function (c) {
+      if (c.type !== 'symbol' && map.getLayer(c.id)) map.setLayoutProperty(c.id, 'visibility', si ? 'none' : c.vis);
+    });
+    $('creditoSat').hidden = !si;
+  }
+
   var map, listo = false, popup = null;
   var VISTA = { center: [-4.4222, 36.7186], zoom: 15.1, pitch: 55, bearing: -18 };
   cargarEstilo().then(function (estilo) {
@@ -394,8 +417,23 @@ h1 em { font-style: normal; color: var(--accent); }
         });
         return d;
       }, onRemove: function () {} }, 'bottom-right');
+    map.addControl({ // alterna entre el mapa y la vista satélite
+      onAdd: function () {
+        var d = document.createElement('div'); d.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+        d.innerHTML = '<button id="satelite" type="button" title="Cambiar entre el mapa y la vista satélite" aria-pressed="false">Satélite</button>';
+        d.firstChild.addEventListener('click', function () {
+          if (!capasBase) return;
+          var si = this.getAttribute('aria-pressed') !== 'true';
+          verSatelite(si);
+          this.setAttribute('aria-pressed', si); this.textContent = si ? 'Mapa' : 'Satélite';
+        });
+        return d;
+      }, onRemove: function () {} }, 'bottom-right');
     margen();
-    map.on('style.load', function () { listo = true; pintarCapas(); });
+    map.on('style.load', function () {
+      capasBase = map.getStyle().layers.map(function (l) { return { id: l.id, type: l.type, vis: (l.layout && l.layout.visibility) || 'visible' }; });
+      listo = true; pintarCapas();
+    });
     ['stops', 'cams'].forEach(function (c) {
       map.on('mouseenter', c, function () { map.getCanvas().style.cursor = 'pointer'; });
       map.on('mouseleave', c, function () { map.getCanvas().style.cursor = ''; });
