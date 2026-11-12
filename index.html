@@ -201,9 +201,11 @@ h1 em { font-style: normal; color: var(--accent); }
 #vista { width: 29px; height: 29px; font: 700 11px/1 var(--font); color: #333; }
 .maplibregl-ctrl-group button#satelite { width: auto; height: 29px; padding: 0 10px; font: 600 12px/1 var(--font); color: #333; white-space: nowrap; }
 /* Botón «Mi ubicación» con su nombre escrito */
-.maplibregl-ctrl-group button.maplibregl-ctrl-geolocate { width: auto; display: flex; align-items: center; padding-right: 10px; }
-.maplibregl-ctrl-group button.maplibregl-ctrl-geolocate .maplibregl-ctrl-icon { width: 29px; height: 29px; flex: none; }
-.maplibregl-ctrl-geolocate::after { content: "Mi ubicación"; font: 600 12px/1 var(--font); color: #333; white-space: nowrap; }
+.maplibregl-ctrl-group button.maplibregl-ctrl-geolocate { width: auto; height: 38px; display: flex; align-items: center; padding-right: 13px; }
+.maplibregl-ctrl-group button.maplibregl-ctrl-geolocate .maplibregl-ctrl-icon { width: 38px; height: 38px; flex: none; background-size: 32px; }
+.maplibregl-ctrl-geolocate::after { content: "Mi ubicación"; font: 600 14px/1 var(--font); color: #333; white-space: nowrap; }
+/* Icono de «Mi ubicación» en el verde del panel (mientras no está siguiendo al usuario) */
+.maplibregl-ctrl-geolocate:not(.maplibregl-ctrl-geolocate-active):not(.maplibregl-ctrl-geolocate-background):not(.maplibregl-ctrl-geolocate-active-error):not(.maplibregl-ctrl-geolocate-background-error):not(:disabled) .maplibregl-ctrl-icon { background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%230b6f6a' viewBox='0 0 20 20'%3E%3Cpath d='M10 4C9 4 9 5 9 5v.1A5 5 0 0 0 5.1 9H5s-1 0-1 1 1 1 1 1h.1A5 5 0 0 0 9 14.9v.1s0 1 1 1 1-1 1-1v-.1a5 5 0 0 0 3.9-3.9h.1s1 0 1-1-1-1-1-1h-.1A5 5 0 0 0 11 5.1V5s0-1-1-1m0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7'/%3E%3Ccircle cx='10' cy='10' r='2'/%3E%3C/svg%3E"); }
 
 .pop h3 { margin: 0 18px 2px 0; font-size: 15px; font-weight: 700; line-height: 1.2; }
 .pop .sub { color: var(--muted); font-size: 12.5px; }
@@ -406,17 +408,6 @@ h1 em { font-style: normal; color: var(--accent); }
     // «Mi ubicación»: centra el mapa donde está el usuario y deja un punto azul que le sigue.
     map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true,
       fitBoundsOptions: { maxZoom: 16.5 } }), 'bottom-right');
-    if (es3D) map.addControl({ // alterna entre la vista inclinada y la vista desde arriba
-      onAdd: function () {
-        var d = document.createElement('div'); d.className = 'maplibregl-ctrl maplibregl-ctrl-group';
-        d.innerHTML = '<button id="vista" type="button" title="Cambiar entre vista 3D y plana">2D</button>';
-        d.firstChild.addEventListener('click', function () {
-          var plano = map.getPitch() > 5;
-          map.easeTo({ pitch: plano ? 0 : VISTA.pitch, bearing: plano ? 0 : VISTA.bearing, duration: 700 });
-          this.textContent = plano ? '3D' : '2D';
-        });
-        return d;
-      }, onRemove: function () {} }, 'bottom-right');
     map.addControl({ // alterna entre el mapa y la vista satélite
       onAdd: function () {
         var d = document.createElement('div'); d.className = 'maplibregl-ctrl maplibregl-ctrl-group';
@@ -426,6 +417,17 @@ h1 em { font-style: normal; color: var(--accent); }
           var si = this.getAttribute('aria-pressed') !== 'true';
           verSatelite(si);
           this.setAttribute('aria-pressed', si); this.textContent = si ? 'Mapa' : 'Satélite';
+        });
+        return d;
+      }, onRemove: function () {} }, 'bottom-right');
+    if (es3D) map.addControl({ // alterna entre la vista inclinada y la vista desde arriba
+      onAdd: function () {
+        var d = document.createElement('div'); d.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+        d.innerHTML = '<button id="vista" type="button" title="Cambiar entre vista 3D y plana">2D</button>';
+        d.firstChild.addEventListener('click', function () {
+          var plano = map.getPitch() > 5;
+          map.easeTo({ pitch: plano ? 0 : VISTA.pitch, bearing: plano ? 0 : VISTA.bearing, duration: 700 });
+          this.textContent = plano ? '3D' : '2D';
         });
         return d;
       }, onRemove: function () {} }, 'bottom-right');
