@@ -324,7 +324,7 @@ h1 em { font-style: normal; color: var(--accent); }
     <div id="visorCab"><span id="visorTit"></span><button id="visorCerrar" type="button" aria-label="Cerrar">×</button></div>
     <div id="visorCuerpo">
       <img id="visorImg" alt="Imagen de la cámara ampliada" referrerpolicy="no-referrer">
-      <div id="visorPie" class="num" role="status"></div>
+      <div id="visorPie">Esta imagen se actualiza cada 15 segundos</div>
     </div>
   </div>
   <button id="abrir" class="franja" type="button" aria-label="Mostrar el panel" title="Mostrar el panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
@@ -828,7 +828,7 @@ h1 em { font-style: normal; color: var(--accent); }
     if (!img) return;
     // El servidor municipal no entrega la imagen si la petición indica que viene de otra web: no se envía ese dato.
     img.referrerPolicy = 'no-referrer';
-    var cargar = function () { camProxima = Date.now() + 15000; img.src = c.img + (c.img.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now(); }; // evita la copia guardada
+    var cargar = function () { img.src = c.img + (c.img.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now(); }; // evita la copia guardada
     var sinImagen = function () { clearInterval(camTimer); img.hidden = true; $('camHora').textContent = 'Esta cámara no ofrece imagen en este momento.'; };
     img.addEventListener('load', function () {
       // La DGT responde con un cartel de «imagen no disponible» (639 × 359) cuando la cámara está apagada.
@@ -997,13 +997,6 @@ h1 em { font-style: normal; color: var(--accent); }
   $('q').addEventListener('input', function () { clearTimeout(espera); espera = setTimeout(sugerir, 140); });
   $('q').addEventListener('focus', function () { pedirCalles().catch(function () {}); });
 
-  // Cuenta atrás hasta la siguiente imagen, bajo la cámara ampliada.
-  var camProxima = 0;
-  setInterval(function () {
-    if ($('visor').hidden) return;
-    var s = Math.max(0, Math.ceil((camProxima - Date.now()) / 1000));
-    $('visorPie').textContent = s > 0 ? 'Esta imagen se actualizará en ' + s + (s === 1 ? ' segundo' : ' segundos') : 'Actualizando la imagen…';
-  }, 250);
   function cerrarVisor() { $('visor').hidden = true; }
   $('visor').addEventListener('click', cerrarVisor);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrarVisor(); });
