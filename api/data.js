@@ -13,7 +13,7 @@ module.exports = async (req, res) => {
     const datos = await leer();
     ultimo[nombre] = datos;
     const ttl = datos.parcial ? 60 : normal; // un resultado incompleto se reintenta al minuto
-    res.setHeader('Cache-Control', `public, max-age=0, s-maxage=${ttl}, stale-while-revalidate=${ttl * 3}`);
+    res.setHeader('Cache-Control', `public, max-age=0, s-maxage=${ttl}, stale-while-revalidate=${nombre === 'webcams' ? 60 : ttl * 3}`);
     res.status(200).json(datos);
   } catch (e) {
     // Si la fuente falla, se devuelve lo último bueno que esta instancia tenga en memoria (lleva su propia hora en «t»).
