@@ -138,11 +138,14 @@ h1 em { font-style: normal; color: var(--accent); }
 #creditos a { color: inherit; text-decoration: none; }
 
 /* Imagen de cámara ampliada, casi a pantalla completa */
-#visor { position: absolute; inset: 0; z-index: 20; display: grid; grid-template-rows: auto 1fr; gap: 8px; padding: max(12px, env(safe-area-inset-top, 0px)) 12px max(12px, env(safe-area-inset-bottom, 0px));
+#visor { position: absolute; inset: 0; z-index: 20; display: flex; flex-direction: column; gap: 8px; padding: max(12px, env(safe-area-inset-top, 0px)) 12px max(12px, env(safe-area-inset-bottom, 0px));
   background: rgba(10, 18, 24, .88); cursor: zoom-out; }
 #visorCab { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #fff; font-weight: 600; font-size: 15px; }
 #visorCerrar { width: 38px; height: 38px; flex: none; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .16); color: #fff; font-size: 24px; line-height: 1; cursor: pointer; }
-#visorImg { width: 100%; height: 100%; min-height: 0; object-fit: contain; border-radius: 8px; }
+/* La imagen y su cuenta atrás van juntas y centradas: el texto queda justo debajo de la imagen. */
+#visorCuerpo { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; }
+#visorImg { width: 100%; height: auto; max-height: calc(100% - 34px); object-fit: contain; border-radius: 8px; }
+#visorPie { color: #fff; text-align: center; font-size: 14px; min-height: 20px; }
 
 /* Botones del panel: desplegar (móvil) y minimizar */
 #acciones { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; }
@@ -319,7 +322,10 @@ h1 em { font-style: normal; color: var(--accent); }
   <div id="creditos">Mapa: <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openmaptiles.org" target="_blank" rel="noopener">OpenMapTiles</a>, datos de <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · Datos: <a href="https://datosabiertos.malaga.eu" target="_blank" rel="noopener">Ayto. de Málaga</a> (CC BY 4.0), DGT</div>
   <div id="visor" hidden role="dialog" aria-label="Imagen de la cámara ampliada">
     <div id="visorCab"><span id="visorTit"></span><button id="visorCerrar" type="button" aria-label="Cerrar">×</button></div>
-    <img id="visorImg" alt="Imagen de la cámara ampliada" referrerpolicy="no-referrer">
+    <div id="visorCuerpo">
+      <img id="visorImg" alt="Imagen de la cámara ampliada" referrerpolicy="no-referrer">
+      <div id="visorPie" class="num" role="status"></div>
+    </div>
   </div>
   <button id="abrir" class="franja" type="button" aria-label="Mostrar el panel" title="Mostrar el panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
 </div>
@@ -822,7 +828,7 @@ h1 em { font-style: normal; color: var(--accent); }
     if (!img) return;
     // El servidor municipal no entrega la imagen si la petición indica que viene de otra web: no se envía ese dato.
     img.referrerPolicy = 'no-referrer';
-    var cargar = function () { img.src = c.img + (c.img.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now(); }; // evita la copia guardada
+    var cargar = function () { camProxima = Date.now() + 15000; img.src = c.img + (c.img.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now(); }; // evita la copia guardada
     var sinImagen = function () { clearInterval(camTimer); img.hidden = true; $('camHora').textContent = 'Esta cámara no ofrece imagen en este momento.'; };
     img.addEventListener('load', function () {
       // La DGT responde con un cartel de «imagen no disponible» (639 × 359) cuando la cámara está apagada.
@@ -991,6 +997,13 @@ h1 em { font-style: normal; color: var(--accent); }
   $('q').addEventListener('input', function () { clearTimeout(espera); espera = setTimeout(sugerir, 140); });
   $('q').addEventListener('focus', function () { pedirCalles().catch(function () {}); });
 
+  // Cuenta atrás hasta la siguiente imagen, bajo la cámara ampliada.
+  var camProxima = 0;
+  setInterval(function () {
+    if ($('visor').hidden) return;
+    var s = Math.max(0, Math.ceil((camProxima - Date.now()) / 1000));
+    $('visorPie').textContent = s > 0 ? 'Esta imagen se actualizará en ' + s + (s === 1 ? ' segundo' : ' segundos') : 'Actualizando la imagen…';
+  }, 250);
   function cerrarVisor() { $('visor').hidden = true; }
   $('visor').addEventListener('click', cerrarVisor);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrarVisor(); });
