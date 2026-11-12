@@ -688,7 +688,7 @@ h1 em { font-style: normal; color: var(--accent); }
     var n = 0, real = true;
     for (var id in buses) if (buses[id].c === selected.c) n++;
     ['1', '2'].forEach(function (dir) { var r = selected.routes[dir]; if (r && !r.real) real = false; });
-    $('lineText').innerHTML = '<span class="pill" style="' + estiloLinea(selected) + '">' + esc(selected.u) + '</span> <b>' + esc(selected.ida) + ' ↔ ' + esc(selected.vuelta) + '</b>' +
+    $('lineText').innerHTML = '<span class="pill" style="' + estiloLinea(selected) + '">' + esc(selected.u) + '</span> <b>' + esc(selected.ida && selected.vuelta ? selected.ida + ' ↔ ' + selected.vuelta : selected.n) + '</b>' +
       '<div class="sub">' + (n ? n + (n === 1 ? ' bus' : ' buses') + ' en ruta ahora' : 'Sin buses en ruta ahora') + (live ? ', en directo.' : '.') +
       (real ? '' : ' La EMT no publica el trazado de esta línea: se dibuja uniendo las paradas.') + '</div>';
   }
