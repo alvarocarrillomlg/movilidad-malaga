@@ -1,6 +1,6 @@
 # La movilidad de Málaga en directo
 
-Mapa en 3D de la movilidad de Málaga: autobuses de la EMT (en su última posición publicada, con el color oficial y el recorrido real de cada línea), paradas con el próximo paso programado de cada línea, aparcamientos municipales, cortes de tráfico, cámaras de tráfico (municipales y de la DGT), webcams públicas de terceros e incidencias de tráfico en tiempo real de la DGT en el municipio, con buscador de calles.
+Mapa en 3D de la movilidad de Málaga: autobuses de la EMT (en su última posición publicada, con el color oficial y el recorrido real de cada línea), paradas con el próximo paso programado de cada línea, aparcamientos municipales, cortes de tráfico, cámaras de tráfico (municipales y de la DGT), webcams públicas de terceros e incidencias de tráfico en tiempo real de la DGT en Málaga y los municipios cercanos (de Fuengirola y Coín a Vélez-Málaga), con buscador de calles.
 
 ## Uso
 
