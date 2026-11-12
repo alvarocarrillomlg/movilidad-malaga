@@ -322,7 +322,7 @@ h1 em { font-style: normal; color: var(--accent); }
     <button id="mini" class="franja" type="button" aria-label="Minimizar el panel" title="Minimizar el panel para ver todo el mapa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
   </section>
 
-  <div id="creditos">Mapa: <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openmaptiles.org" target="_blank" rel="noopener">OpenMapTiles</a>, datos de <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · Datos: <a href="https://datosabiertos.malaga.eu" target="_blank" rel="noopener">Ayto. de Málaga</a> (CC BY 4.0), DGT<span id="creditoSat" hidden> · Ortofoto: <a href="https://pnoa.ign.es" target="_blank" rel="noopener">PNOA</a> cedido por © <a href="https://www.ign.es" target="_blank" rel="noopener">IGN</a> (CC BY 4.0)</span></div>
+  <div id="creditos">Mapa: <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openmaptiles.org" target="_blank" rel="noopener">OpenMapTiles</a>, datos de <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · Datos: <a href="https://datosabiertos.malaga.eu" target="_blank" rel="noopener">Ayto. de Málaga</a> (CC BY 4.0), DGT<span id="creditoWeb" hidden> · Webcams provided by <a href="https://www.windy.com/" target="_blank" rel="noopener">windy.com</a></span><span id="creditoSat" hidden> · Ortofoto: <a href="https://pnoa.ign.es" target="_blank" rel="noopener">PNOA</a> cedido por © <a href="https://www.ign.es" target="_blank" rel="noopener">IGN</a> (CC BY 4.0)</span></div>
   <div id="visor" hidden role="dialog" aria-label="Imagen de la cámara ampliada">
     <div id="visorCab"><span id="visorTit"></span><button id="visorCerrar" type="button" aria-label="Cerrar">×</button></div>
     <div id="visorCuerpo">
@@ -860,14 +860,33 @@ h1 em { font-style: normal; color: var(--accent); }
   }
 
   // ---------- Cámaras ----------
-  function loadCams(d) { cams = d.list; $('nCams').textContent = fmt.format(cams.length); pintarCapas(); }
+  // Las municipales y de la DGT llegan en «camaras»; las webcams públicas de terceros (Windy), aparte en «webcams»,
+  // porque sus enlaces de imagen caducan a los 10 minutos y hay que renovarlos más a menudo.
+  var camsTrafico = [], camsWeb = [];
+  function juntarCams() {
+    // Una webcam a menos de 60 m de una cámara de tráfico suele ser esa misma cámara repetida: no se añade.
+    var web = camsWeb.filter(function (w) {
+      return !camsTrafico.some(function (c) { return Math.abs(c.lat - w.lat) < 0.00055 && Math.abs(c.lon - w.lon) < 0.00068; });
+    });
+    cams = camsTrafico.concat(web);
+    $('nCams').textContent = fmt.format(cams.length);
+    $('creditoWeb').hidden = !web.length;
+    pintarCapas();
+  }
+  function loadCams(d) { camsTrafico = d.list; juntarCams(); }
+  function loadWebcams(d) { camsWeb = d.list || []; juntarCams(); }
   function abrirCam(c) {
-    var titular = c.f === 'dgt' ? 'Cámara de la DGT' : c.n;
+    var web = c.f === 'web';
+    var titular = c.f === 'dgt' ? 'Cámara de la DGT' : web ? 'Webcam pública' : c.n;
     abrir([c.lon, c.lat], '<div class="pop"><h3>' + esc(c.d || c.n) + '</h3><div class="sub">' + esc(titular) + '</div>' +
-      (c.img ? '<img id="camImg" alt="Imagen de la cámara. Pulsa para ampliarla" title="Pulsa para ampliar"><div class="sub" id="camHora"></div>' : '') +
+      (c.img ? (web ? '<a href="' + esc(c.url) + '" target="_blank" rel="noopener">' : '') +
+        '<img id="camImg" alt="Imagen de la cámara. Pulsa para ' + (web ? 'verla en windy.com' : 'ampliarla') + '" title="Pulsa para ' + (web ? 'verla en windy.com' : 'ampliar') + '">' +
+        (web ? '</a>' : '') + '<div class="sub" id="camHora"></div>' : '') +
+      (web ? '<div class="note">Webcams provided by <a href="https://www.windy.com/" target="_blank" rel="noopener">windy.com</a> · <a href="https://www.windy.com/webcams/add" target="_blank" rel="noopener">add a webcam</a></div>' : '') +
       '</div>', 300);
     var img = $('camImg');
     if (!img) return;
+    if (web) return abrirWebcam(c, img);
     // El servidor municipal no entrega la imagen si la petición indica que viene de otra web: no se envía ese dato.
     img.referrerPolicy = 'no-referrer';
     var cargar = function () { img.src = c.img + (c.img.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now(); }; // evita la copia guardada
@@ -885,6 +904,26 @@ h1 em { font-style: normal; color: var(--accent); }
     img.addEventListener('error', sinImagen);
     cargar();
     camTimer = setInterval(function () { if (document.body.contains(img)) cargar(); else clearInterval(camTimer); }, 15000);
+  }
+  // Webcam de Windy: la imagen se usa tal cual llega (con su enlace firmado) y lleva a su página en windy.com.
+  // Si el enlace ha caducado, se piden enlaces nuevos una vez; se renueva cada 3 minutos mientras esté abierta.
+  function abrirWebcam(c, img) {
+    var reintento = false;
+    var sinImagen = function () { clearInterval(camTimer); img.hidden = true; $('camHora').textContent = 'Esta webcam no ofrece imagen en este momento.'; };
+    var renovar = function () {
+      return get('webcams').then(function (d) {
+        loadWebcams(d);
+        var n = (d.list || []).filter(function (w) { return w.id === c.id; })[0];
+        if (n) { c.img = n.img; img.src = n.img; } else sinImagen();
+      });
+    };
+    img.addEventListener('load', function () { reintento = false; $('camHora').textContent = 'Imagen de las ' + hHora.format(new Date()) + '. Pulsa para verla en windy.com.'; });
+    img.addEventListener('error', function () {
+      if (reintento) return sinImagen();
+      reintento = true; renovar().catch(sinImagen);
+    });
+    img.src = c.img;
+    camTimer = setInterval(function () { if (document.body.contains(img)) renovar().catch(function () {}); else clearInterval(camTimer); }, 180000);
   }
 
   // ---------- Buscador de calles ----------
@@ -1112,6 +1151,7 @@ h1 em { font-style: normal; color: var(--accent); }
     every('aparcamientos', loadPark, 60);
     every('cortes', loadCortes, 600);
     every('camaras', loadCams, 600); // cada 10 min: entran o salen según den imagen o la pierdan
+    every('webcams', loadWebcams, 180); // sus enlaces de imagen caducan a los 10 minutos
     every('incidencias', loadIncid, 60);
   }
 })();

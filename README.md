@@ -1,6 +1,6 @@
 # La movilidad de Málaga en directo
 
-Mapa en 3D de la movilidad de Málaga: autobuses de la EMT (en su última posición publicada, con el color oficial y el recorrido real de cada línea), paradas con el próximo paso programado de cada línea, aparcamientos municipales, cortes de tráfico, cámaras de tráfico (municipales y de la DGT) e incidencias de tráfico en tiempo real de la DGT en el municipio, con buscador de calles.
+Mapa en 3D de la movilidad de Málaga: autobuses de la EMT (en su última posición publicada, con el color oficial y el recorrido real de cada línea), paradas con el próximo paso programado de cada línea, aparcamientos municipales, cortes de tráfico, cámaras de tráfico (municipales y de la DGT), webcams públicas de terceros e incidencias de tráfico en tiempo real de la DGT en el municipio, con buscador de calles.
 
 ## Uso
 
@@ -26,6 +26,7 @@ La lectura de las fuentes está en `lib/fuentes.js`, que comparten el servidor l
 
 - [Datos abiertos del Ayuntamiento de Málaga](https://datosabiertos.malaga.eu) (CC BY 4.0)
 - [DGT](https://nap.dgt.es): cámaras de carretera e incidencias de tráfico (DATEX II)
+- [Windy Webcams](https://api.windy.com/webcams) (plan gratuito): webcams públicas de playas, puerto, aeropuerto y otros puntos del municipio. Solo aparecen si la variable de entorno `WINDY_API_KEY` tiene una clave gratuita de https://api.windy.com/keys (en Vercel: «Settings → Environment Variables», y volver a publicar). Cada imagen enlaza a su página en Windy y se muestra «Webcams provided by windy.com», como piden sus condiciones.
 - Buscador de calles: callejero municipal (`calles.json`, generado con `herramientas/generar-calles.js`); para lugares que no son calles, [Nominatim](https://nominatim.openstreetmap.org) (OpenStreetMap)
 - Vista satélite: ortofoto del [PNOA](https://pnoa.ign.es) cedida por © [IGN](https://www.ign.es) (CC BY 4.0)
 - Mapa base: [OpenFreeMap](https://openfreemap.org) © OpenMapTiles, datos de [OpenStreetMap](https://www.openstreetmap.org/copyright). Si no está disponible, la página usa el mapa plano guardado en `tiles/`, que es ese mismo mapa dibujado de antemano sin puntos de interés.
