@@ -648,13 +648,12 @@ h1 em { font-style: normal; color: var(--accent); }
       map.addLayer({ id: 'route-casing', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 8, 'line-opacity': .9 } });
       map.addLayer({ id: 'route', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 5 } });
       var tam = ['interpolate', ['linear'], ['zoom'], 11, .5, 14, .72, 17, 1];
+      // Las paradas se ven a cualquier distancia; de lejos, más pequeñas para que quepan.
       map.addLayer({ id: 'cams', type: 'symbol', source: 'cams', layout: { 'icon-image': 'camara', 'icon-size': tam, 'icon-allow-overlap': true, 'icon-ignore-placement': true } });
-      map.addLayer({ id: 'stops', type: 'symbol', source: 'stops', layout: { 'icon-image': 'parada', 'icon-size': ['interpolate', ['linear'], ['zoom'], 11, .4, 15, .55, 17.5, .9], 'icon-allow-overlap': true, 'icon-ignore-placement': true } });
+      map.addLayer({ id: 'stops', type: 'symbol', source: 'stops', layout: { 'icon-image': 'parada', 'icon-size': ['interpolate', ['linear'], ['zoom'], 11, .26, 13, .36, 15, .55, 17.5, .9], 'icon-allow-overlap': true, 'icon-ignore-placement': true } });
     }
     map.setPaintProperty('route-casing', 'line-color', css('--panel'));
     map.setPaintProperty('route', 'line-color', selected ? selected.color : css('--accent'));
-    // Las paradas de la línea elegida se ven a cualquier distancia; el resto, solo al acercar el mapa.
-    map.setFilter('stops', ['any', ['==', ['get', 'l'], 1], ['>=', ['zoom'], 14.5]]);
     map.setLayoutProperty('stops', 'visibility', shown.stops || selected ? 'visible' : 'none');
     map.setLayoutProperty('cams', 'visibility', shown.cams ? 'visible' : 'none');
   }
