@@ -765,7 +765,7 @@ h1 em { font-style: normal; color: var(--accent); }
         abrir([p.lon, p.lat], '<div class="pop"><h3>Aparcamiento ' + esc(p.n) + '</h3><div class="sub">' + esc(p.d) + '</div>' +
           '<p><span class="fig num" style="color:var(' + tok + ')">' + fmt.format(p.libres) + '</span> plazas libres</p>' +
           comoLlegar(p.lat, p.lon) +
-          '<div class="note">Aparcamiento público municipal. Plazas leídas a las ' + hHora.format(new Date(d.t)) + '.' + (p.aprox ? ' Ubicación tomada de OpenStreetMap: la fuente municipal no da sus coordenadas.' : '') + '</div></div>');
+          '<div class="note">Aparcamiento público municipal. Plazas leídas a las ' + hHora.format(new Date(d.t)) + '.' + (p.aprox ? ' Ubicación aproximada.' : '') + '</div></div>');
       });
       m.getElement().style.zIndex = 3;
       parkMarkers.push(m);
