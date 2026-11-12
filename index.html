@@ -770,7 +770,7 @@ h1 em { font-style: normal; color: var(--accent); }
       m.getElement().style.zIndex = 3;
       parkMarkers.push(m);
     });
-    $('nPark').textContent = fmt.format(total);
+    $('nPark').textContent = fmt.format(total); $('nPark').title = '';
   }
 
   // ---------- Cortes ----------
@@ -1038,9 +1038,15 @@ h1 em { font-style: normal; color: var(--accent); }
 
   // ---------- Carga y refresco ----------
   function get(name) { return fetch('data/' + name + '.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }); }
+  var CONTADOR = { buses: 'nBuses', aparcamientos: 'nPark', cortes: 'nCortes', camaras: 'nCams', incidencias: 'nIncid' };
   function every(name, fn, secs) {
     var run = function () {
-      get(name).then(fn).catch(function () { if (name === 'buses' && !busFetched) $('statusText').textContent = 'No llegan datos. Se reintentará en breve.'; })
+      get(name).then(fn).catch(function () {
+        if (name === 'buses' && !busFetched) $('statusText').textContent = 'No llegan datos. Se reintentará en breve.';
+        // Si un apartado aún no tiene dato y su fuente falla, se quita la rueda de carga: «–» significa «sin datos ahora».
+        var el = $(CONTADOR[name]);
+        if (el && el.querySelector('.carga')) { el.textContent = '–'; el.title = 'Sin datos de la fuente en este momento'; }
+      })
         .then(function () { setTimeout(run, (live ? secs : Math.max(secs, 300)) * 1000); });
     };
     run();
