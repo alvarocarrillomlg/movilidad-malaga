@@ -750,7 +750,7 @@ h1 em { font-style: normal; color: var(--accent); }
     }
     var age = Math.round((Date.now() - busUpd) / 1000);
     st.className = age < 420 ? 'live' : 'late';
-    tx.textContent = age < 420 ? 'En directo · la EMT publicó la posición de los buses ' + ago(age) : 'La EMT no actualiza la posición de los buses desde ' + ago(age);
+    tx.textContent = age < 420 ? 'En directo' : 'Los buses llegan con retraso';
   }
 
   // ---------- Aparcamientos ----------
