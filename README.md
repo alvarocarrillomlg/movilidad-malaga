@@ -18,6 +18,8 @@ El servidor hace de intermediario con el portal de datos abiertos, que no admite
 
 El repositorio está preparado para [Vercel](https://vercel.com) (plan gratuito): entrar con la cuenta de GitHub, «Add New… → Project», elegir este repositorio y pulsar «Deploy». No hay que configurar nada: `vercel.json` indica cómo construir la página (`build.js`) y `api/data.js` sirve los datos. Cada cambio en `main` se publica solo.
 
+Los cortes situados en calles peatonales o de acceso restringido del centro histórico no se muestran; esas calles salen de `centro-restringido.json`, generado con `herramientas/generar-centro.js` a partir del callejero municipal.
+
 La lectura de las fuentes está en `lib/fuentes.js`, que comparten el servidor local y el despliegue.
 
 ## Fuentes
